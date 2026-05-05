@@ -1,0 +1,2626 @@
+{
+  "users": {
+    "8214269285": {
+      "id": "8214269285",
+      "username": "whooshbuymanager",
+      "full_name": "Whoosh Manager",
+      "purchases_count": 20,
+      "balance": 24134110,
+      "created_at": "2026-04-17T23:02:21",
+      "agreed": true,
+      "favorites": [],
+      "cart": {
+        "Аренда::SCOOTER-RENT-1": 1
+      },
+      "blocked": false,
+      "subscribed": true,
+      "bonus_points": 0,
+      "active_promo": "",
+      "referral_code": "REF-20260427-E2NYB8",
+      "referred_by": "",
+      "notes": "",
+      "tags": []
+    },
+    "8275232275": {
+      "id": "8275232275",
+      "username": "Unison_Good",
+      "full_name": "Unis0n",
+      "purchases_count": 1,
+      "balance": 0,
+      "created_at": "2026-04-17T23:03:38",
+      "agreed": true,
+      "favorites": [],
+      "cart": {},
+      "blocked": false,
+      "subscribed": true,
+      "bonus_points": 0,
+      "active_promo": "",
+      "referral_code": "REF-20260427-G7XSX4",
+      "referred_by": "",
+      "notes": "",
+      "tags": []
+    },
+    "7377251494": {
+      "id": "7377251494",
+      "username": "lostmywife",
+      "full_name": "𝕸𝖆𝖓𝖆𝖌𝖊𝖗",
+      "purchases_count": 2,
+      "balance": 0,
+      "created_at": "2026-04-17T23:03:46",
+      "agreed": true,
+      "favorites": [],
+      "cart": {},
+      "blocked": false,
+      "subscribed": true,
+      "bonus_points": 0,
+      "active_promo": "",
+      "referral_code": "REF-20260427-K1UW3W",
+      "referred_by": "",
+      "notes": "",
+      "tags": []
+    },
+    "8377997895": {
+      "id": "8377997895",
+      "username": "BestRuManager",
+      "full_name": "𝐂𝐢𝐭𝐲 𝐌𝐚𝐧𝐚𝐠𝐞𝐫",
+      "purchases_count": 0,
+      "balance": 0,
+      "created_at": "2026-04-17T23:41:47",
+      "agreed": false,
+      "favorites": [],
+      "cart": {},
+      "blocked": false,
+      "subscribed": true,
+      "bonus_points": 0,
+      "active_promo": "",
+      "referral_code": "REF-20260427-2EDWVW",
+      "referred_by": "",
+      "notes": "",
+      "tags": []
+    },
+    "8286730775": {
+      "id": "8286730775",
+      "username": "H186B",
+      "full_name": "ENE",
+      "created_at": "2026-04-27T03:58:35",
+      "purchases_count": 5,
+      "balance": 999999999999999999999999999999999999999999999999999999999999999999999989106,
+      "agreed": true,
+      "favorites": [],
+      "cart": {},
+      "blocked": false,
+      "subscribed": true,
+      "bonus_points": 0,
+      "active_promo": "",
+      "referral_code": "REF-20260427-1T3Y4F",
+      "referred_by": "",
+      "notes": "",
+      "tags": []
+    },
+    "6324025626": {
+      "id": "6324025626",
+      "username": "ISMAILOV_186",
+      "full_name": "Los Angeles01",
+      "created_at": "2026-04-30T01:28:48",
+      "purchases_count": 1,
+      "balance": 999999999999999999999999999999999999403,
+      "agreed": true,
+      "favorites": [],
+      "cart": {},
+      "blocked": false,
+      "subscribed": true,
+      "bonus_points": 0,
+      "active_promo": "",
+      "referral_code": "REF-20260430-TPGQM3",
+      "referred_by": "",
+      "notes": "",
+      "tags": []
+    },
+    "1814453547": {
+      "id": "1814453547",
+      "username": "Shprotteridk",
+      "full_name": "Шпроттер | тупOi!",
+      "created_at": "2026-05-03T02:38:34",
+      "purchases_count": 0,
+      "balance": 0,
+      "agreed": false,
+      "favorites": [],
+      "cart": {},
+      "blocked": false,
+      "subscribed": true,
+      "bonus_points": 0,
+      "active_promo": "",
+      "referral_code": "REF-20260503-6Q0878",
+      "referred_by": "",
+      "notes": "",
+      "tags": []
+    }
+  },
+  "admins": [
+    "8275232275",
+    "8214269285",
+    "8286730775"
+  ],
+  "catalog": {
+    "Аренда": [
+      {
+        "id": "SCOOTER-TARIFF-MIN",
+        "title": "🛴 Тариф Минимум",
+        "description": "Стартовый тариф для короткой поездки. Подходит, если нужно быстро доехать и сразу запустить аренду по номеру или QR-коду.",
+        "price": 199,
+        "photo": "",
+        "active": true,
+        "stock": -1,
+        "delivery_text": "Оплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+        "model": "",
+        "sold_count": 0,
+        "created_at": "2026-05-03T02:29:17",
+        "updated_at": "2026-05-03T02:29:17"
+      },
+      {
+        "id": "SCOOTER-TARIFF-MID",
+        "title": "🛴 Тариф Средний",
+        "description": "Оптимальный тариф для обычной поездки по делам. Баланс между ценой и временем аренды.",
+        "price": 351,
+        "photo": "",
+        "active": true,
+        "stock": -1,
+        "delivery_text": "Оплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+        "model": "",
+        "sold_count": 0,
+        "created_at": "2026-05-03T02:29:17",
+        "updated_at": "2026-05-03T02:29:17"
+      },
+      {
+        "id": "SCOOTER-TARIFF-MAX",
+        "title": "🛴 Тариф Максимум",
+        "description": "Расширенный тариф для долгой поездки. Больше времени на аренду и спокойный запас для маршрута.",
+        "price": 703,
+        "photo": "",
+        "active": true,
+        "stock": -1,
+        "delivery_text": "Оплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+        "model": "",
+        "sold_count": 1,
+        "created_at": "2026-05-03T02:29:17",
+        "updated_at": "2026-05-03T02:50:59"
+      }
+    ]
+  },
+  "orders": {
+    "ORD-20260417-E1R867": {
+      "order_id": "ORD-20260417-E1R867",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Товар 1",
+      "price": 125,
+      "status": "paid",
+      "created_at": "2026-04-17T23:03:12",
+      "confirmed_at": "2026-04-17T23:03:48",
+      "total": 125,
+      "items": [],
+      "payment_method": "manual",
+      "discount": 0,
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260417-FUWSHV": {
+      "order_id": "ORD-20260417-FUWSHV",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "price": 10000,
+      "status": "paid_balance",
+      "created_at": "2026-04-17T23:29:10",
+      "confirmed_at": "2026-04-17T23:29:10",
+      "total": 10000,
+      "items": [],
+      "payment_method": "manual",
+      "discount": 0,
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260418-XKQFPZ": {
+      "order_id": "ORD-20260418-XKQFPZ",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "price": 10000,
+      "status": "rejected",
+      "created_at": "2026-04-18T01:10:13",
+      "confirmed_at": "2026-04-18T01:15:50",
+      "total": 10000,
+      "items": [],
+      "payment_method": "manual",
+      "discount": 0,
+      "payment_id": "",
+      "purchase_counted": false,
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260418-M1SDDO": {
+      "order_id": "ORD-20260418-M1SDDO",
+      "user_id": "8275232275",
+      "username": "Unison_Good",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "price": 10000,
+      "status": "paid",
+      "created_at": "2026-04-18T01:40:07",
+      "confirmed_at": "2026-04-18T01:40:23",
+      "total": 10000,
+      "items": [],
+      "payment_method": "manual",
+      "discount": 0,
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260418-SIEC4X": {
+      "order_id": "ORD-20260418-SIEC4X",
+      "user_id": "7377251494",
+      "username": "lostmywife",
+      "city": "Санкт-Петербург",
+      "item_id": "САН-1",
+      "item_title": "Товар 1",
+      "price": 125,
+      "status": "paid",
+      "created_at": "2026-04-18T01:47:31",
+      "confirmed_at": "2026-04-18T04:39:40",
+      "total": 125,
+      "items": [],
+      "payment_method": "manual",
+      "discount": 0,
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260418-T8SSZV": {
+      "order_id": "ORD-20260418-T8SSZV",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "Екатеринбург",
+      "item_id": "ЕКА-1",
+      "item_title": "Товар 1",
+      "price": 125,
+      "status": "paid_balance",
+      "created_at": "2026-04-18T04:41:03",
+      "confirmed_at": "2026-04-18T04:41:03",
+      "total": 125,
+      "items": [],
+      "payment_method": "manual",
+      "discount": 0,
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260418-YLJO02": {
+      "order_id": "ORD-20260418-YLJO02",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-2",
+      "item_title": "Цифровой товар",
+      "price": 3499,
+      "status": "paid",
+      "created_at": "2026-04-18T04:44:32",
+      "confirmed_at": "2026-04-18T04:45:06",
+      "total": 3499,
+      "items": [],
+      "payment_method": "manual",
+      "discount": 0,
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-CCM405": {
+      "order_id": "ORD-20260427-CCM405",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 0,
+      "total": 10000,
+      "promo_code": "",
+      "status": "awaiting_payment",
+      "payment_method": "legacy",
+      "payment_id": "PAY-20260427-72O8GQ",
+      "purchase_counted": false,
+      "created_at": "2026-04-27T00:52:33",
+      "confirmed_at": "",
+      "paid_at": "",
+      "delivered_at": "",
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-2QVQ22": {
+      "order_id": "ORD-20260427-2QVQ22",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 0,
+      "total": 10000,
+      "promo_code": "",
+      "status": "awaiting_manual",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": false,
+      "created_at": "2026-04-27T00:52:48",
+      "confirmed_at": "",
+      "paid_at": "",
+      "delivered_at": "",
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-U0W46S": {
+      "order_id": "ORD-20260427-U0W46S",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "Казань",
+      "item_id": "КАЗ-1",
+      "item_title": "Товар 1",
+      "items": [
+        {
+          "category": "Казань",
+          "item_id": "КАЗ-1",
+          "title": "Товар 1",
+          "price": 125,
+          "qty": 1
+        }
+      ],
+      "price": 125,
+      "discount": 0,
+      "total": 125,
+      "promo_code": "",
+      "status": "awaiting_payment",
+      "payment_method": "legacy",
+      "payment_id": "PAY-20260427-RRZ6MZ",
+      "purchase_counted": false,
+      "created_at": "2026-04-27T00:54:11",
+      "confirmed_at": "",
+      "paid_at": "",
+      "delivered_at": "",
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-5S1A00": {
+      "order_id": "ORD-20260427-5S1A00",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "Казань",
+      "item_id": "КАЗ-1",
+      "item_title": "Товар 1",
+      "items": [
+        {
+          "category": "Казань",
+          "item_id": "КАЗ-1",
+          "title": "Товар 1",
+          "price": 125,
+          "qty": 1
+        }
+      ],
+      "price": 125,
+      "discount": 0,
+      "total": 125,
+      "promo_code": "",
+      "status": "paid",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "created_at": "2026-04-27T00:54:19",
+      "confirmed_at": "2026-04-27T00:56:47",
+      "paid_at": "2026-04-27T00:56:47",
+      "delivered_at": "2026-04-27T00:56:47",
+      "delivery_text": "<b>Товар 1</b>\nСпасибо за покупку. Настройте текст выдачи в админ-панели.",
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-L0BQ9S": {
+      "order_id": "ORD-20260427-L0BQ9S",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 0,
+      "total": 10000,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "created_at": "2026-04-27T00:59:26",
+      "confirmed_at": "2026-04-27T00:59:26",
+      "paid_at": "2026-04-27T00:59:26",
+      "delivered_at": "2026-04-27T00:59:26",
+      "delivery_text": "<b>Мяу</b>\n1337",
+      "referral_bonus_applied": false,
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-YAAH4H": {
+      "order_id": "ORD-20260427-YAAH4H",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 0,
+      "total": 10000,
+      "promo_code": "",
+      "status": "awaiting_payment",
+      "payment_method": "legacy",
+      "payment_id": "PAY-20260427-ZBRLYX",
+      "purchase_counted": false,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-27T01:48:41",
+      "confirmed_at": "",
+      "paid_at": "",
+      "delivered_at": "",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-BO47O5": {
+      "order_id": "ORD-20260427-BO47O5",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-2",
+      "item_title": "Цифровой товар 2",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-2",
+          "title": "Цифровой товар 2",
+          "price": 3499,
+          "qty": 1
+        }
+      ],
+      "price": 3499,
+      "discount": 0,
+      "total": 3499,
+      "promo_code": "",
+      "status": "paid",
+      "payment_method": "legacy",
+      "payment_id": "PAY-20260427-TBTN5M",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-27T01:49:15",
+      "confirmed_at": "2026-04-27T03:45:10",
+      "paid_at": "2026-04-27T03:45:10",
+      "delivered_at": "2026-04-27T03:45:10",
+      "delivery_text": "<b>Цифровой товар 2</b>\nСпасибо за покупку. Настройте выдачу для этого товара в админ-панели.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-5MXX6T": {
+      "order_id": "ORD-20260427-5MXX6T",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 0,
+      "total": 10000,
+      "promo_code": "",
+      "status": "paid",
+      "payment_method": "legacy",
+      "payment_id": "PAY-20260427-IW4UDT",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-27T03:53:37",
+      "confirmed_at": "2026-04-27T03:55:15",
+      "paid_at": "2026-04-27T03:55:15",
+      "delivered_at": "2026-04-27T03:55:15",
+      "delivery_text": "<b>Мяу</b>\n1337",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-C0FM3N": {
+      "order_id": "ORD-20260427-C0FM3N",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 1000,
+      "total": 9000,
+      "promo_code": "CODE",
+      "status": "paid",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-27T03:54:28",
+      "confirmed_at": "2026-04-27T03:54:57",
+      "paid_at": "2026-04-27T03:54:57",
+      "delivered_at": "2026-04-27T03:54:57",
+      "delivery_text": "<b>Мяу</b>\n1337",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-RQ7FJN": {
+      "order_id": "ORD-20260427-RQ7FJN",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 1000,
+      "total": 9000,
+      "promo_code": "CODE",
+      "status": "paid",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-27T04:00:22",
+      "confirmed_at": "2026-04-27T04:00:45",
+      "paid_at": "2026-04-27T04:00:45",
+      "delivered_at": "2026-04-27T04:00:45",
+      "delivery_text": "<b>Мяу</b>\n1337",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260427-9PMU6T": {
+      "order_id": "ORD-20260427-9PMU6T",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "city": "",
+      "item_id": "МОС-1",
+      "item_title": "Мяу",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "МОС-1",
+          "title": "Мяу",
+          "price": 10000,
+          "qty": 1
+        }
+      ],
+      "price": 10000,
+      "discount": 0,
+      "total": 10000,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-27T04:04:01",
+      "confirmed_at": "2026-04-27T04:04:01",
+      "paid_at": "2026-04-27T04:04:01",
+      "delivered_at": "2026-04-27T04:04:01",
+      "delivery_text": "<b>Мяу</b>\n1337",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-GNGFEA": {
+      "order_id": "ORD-20260430-GNGFEA",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "MSK-SCOOTER-1",
+      "item_title": "🛴 Аренда самоката",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "MSK-SCOOTER-1",
+          "title": "🛴 Аренда самоката",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T00:14:40",
+      "confirmed_at": "2026-04-30T00:14:40",
+      "paid_at": "2026-04-30T00:14:40",
+      "delivered_at": "2026-04-30T00:14:40",
+      "delivery_text": "<b>🛴 Аренда самоката</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-UTJUQI": {
+      "order_id": "ORD-20260430-UTJUQI",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "",
+      "item_id": "MSK-SCOOTER-1",
+      "item_title": "🛴 Аренда самоката",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "MSK-SCOOTER-1",
+          "title": "🛴 Аренда самоката",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T00:21:26",
+      "confirmed_at": "2026-04-30T00:21:26",
+      "paid_at": "2026-04-30T00:21:26",
+      "delivered_at": "2026-04-30T00:21:26",
+      "delivery_text": "<b>🛴 Аренда самоката</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-SLTS3M": {
+      "order_id": "ORD-20260430-SLTS3M",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "Тариф Минимум",
+      "item_id": "SCOOTER-RENT-1",
+      "item_title": "🛴 Аренда самоката",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "SCOOTER-RENT-1",
+          "title": "🛴 Аренда самоката",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "awaiting_manual",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": false,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T00:51:13",
+      "confirmed_at": "",
+      "paid_at": "",
+      "delivered_at": "",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-KOEIJO": {
+      "order_id": "ORD-20260430-KOEIJO",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "city": "Тариф Минимум",
+      "item_id": "SCOOTER-RENT-1",
+      "item_title": "🛴 Аренда самоката",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "SCOOTER-RENT-1",
+          "title": "🛴 Аренда самоката",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T00:55:07",
+      "confirmed_at": "2026-04-30T00:55:07",
+      "paid_at": "2026-04-30T00:55:07",
+      "delivered_at": "2026-04-30T00:55:07",
+      "delivery_text": "<b>🛴 Аренда самоката</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-8N5XU4": {
+      "order_id": "ORD-20260430-8N5XU4",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "city": "Тариф Минимум",
+      "item_id": "ITEM-20260430-TDRBDQ",
+      "item_title": "7 дней",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "ITEM-20260430-TDRBDQ",
+          "title": "7 дней",
+          "price": 351,
+          "qty": 1
+        }
+      ],
+      "price": 351,
+      "discount": 35,
+      "total": 316,
+      "promo_code": "CODE",
+      "status": "awaiting_manual",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": false,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T01:29:58",
+      "confirmed_at": "",
+      "paid_at": "",
+      "delivered_at": "",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-YZN3PK": {
+      "order_id": "ORD-20260430-YZN3PK",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "city": "Тариф Минимум",
+      "item_id": "SCOOTER-RENT-1",
+      "item_title": "1 день",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "SCOOTER-RENT-1",
+          "title": "1 день",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 19,
+      "total": 180,
+      "promo_code": "CODE",
+      "status": "paid",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T01:31:22",
+      "confirmed_at": "2026-04-30T01:31:48",
+      "paid_at": "2026-04-30T01:31:48",
+      "delivered_at": "2026-04-30T01:31:48",
+      "delivery_text": "<b>1 день</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-ULTYHU": {
+      "order_id": "ORD-20260430-ULTYHU",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "city": "Тариф Минимум",
+      "item_id": "SCOOTER-RENT-1",
+      "item_title": "1 день",
+      "items": [
+        {
+          "category": "Тариф Минимум",
+          "item_id": "SCOOTER-RENT-1",
+          "title": "1 день",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T01:32:23",
+      "confirmed_at": "2026-04-30T01:32:23",
+      "paid_at": "2026-04-30T01:32:23",
+      "delivered_at": "2026-04-30T01:32:23",
+      "delivery_text": "<b>1 день</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-1BUWHA": {
+      "order_id": "ORD-20260430-1BUWHA",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "city": "Тариф Максимум",
+      "item_id": "ITEM-20260430-MUBL7B",
+      "item_title": "7 дней",
+      "items": [
+        {
+          "category": "Тариф Максимум",
+          "item_id": "ITEM-20260430-MUBL7B",
+          "title": "7 дней",
+          "price": 703,
+          "qty": 1
+        }
+      ],
+      "price": 703,
+      "discount": 0,
+      "total": 703,
+      "promo_code": "",
+      "status": "paid",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T01:34:05",
+      "confirmed_at": "2026-04-30T01:34:05",
+      "paid_at": "2026-04-30T01:34:05",
+      "delivered_at": "2026-04-30T01:34:05",
+      "delivery_text": "<b>7 дней</b>\nСпасибо за покупку. Настройте выдачу товара.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-T04Y2K": {
+      "order_id": "ORD-20260430-T04Y2K",
+      "user_id": "6324025626",
+      "username": "ISMAILOV_186",
+      "city": "Тариф Максимум",
+      "item_id": "ITEM-20260430-MUBL7B",
+      "item_title": "7 дней",
+      "items": [
+        {
+          "category": "Тариф Максимум",
+          "item_id": "ITEM-20260430-MUBL7B",
+          "title": "7 дней",
+          "price": 703,
+          "qty": 1
+        }
+      ],
+      "price": 703,
+      "discount": 0,
+      "total": 703,
+      "promo_code": "",
+      "status": "refunded",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T01:47:48",
+      "confirmed_at": "2026-04-30T01:47:48",
+      "paid_at": "2026-04-30T01:47:48",
+      "delivered_at": "2026-04-30T01:47:48",
+      "delivery_text": "<b>7 дней</b>\nСпасибо за покупку. Настройте выдачу товара.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-GT61O2": {
+      "order_id": "ORD-20260430-GT61O2",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "city": "Аренда",
+      "item_id": "SCOOTER-RENT-1",
+      "item_title": "Аренда самоката",
+      "items": [
+        {
+          "category": "Аренда",
+          "item_id": "SCOOTER-RENT-1",
+          "title": "Аренда самоката",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T23:03:56",
+      "confirmed_at": "2026-04-30T23:03:56",
+      "paid_at": "2026-04-30T23:03:56",
+      "delivered_at": "2026-04-30T23:03:56",
+      "delivery_text": "<b>🛴 Аренда самоката</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-XY02UU": {
+      "order_id": "ORD-20260430-XY02UU",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "city": "Аренда",
+      "item_id": "SCOOTER-RENT-1",
+      "item_title": "Аренда самоката",
+      "items": [
+        {
+          "category": "Аренда",
+          "item_id": "SCOOTER-RENT-1",
+          "title": "Аренда самоката",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "paid",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T23:10:35",
+      "confirmed_at": "2026-04-30T23:11:04",
+      "paid_at": "2026-04-30T23:11:04",
+      "delivered_at": "2026-04-30T23:11:04",
+      "delivery_text": "<b>🛴 Аренда самоката</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-0XUX58": {
+      "order_id": "ORD-20260430-0XUX58",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "city": "Аренда",
+      "item_id": "SCOOTER-RENT-1",
+      "item_title": "Аренда самоката",
+      "items": [
+        {
+          "category": "Аренда",
+          "item_id": "SCOOTER-RENT-1",
+          "title": "Аренда самоката",
+          "price": 199,
+          "qty": 1
+        }
+      ],
+      "price": 199,
+      "discount": 0,
+      "total": 199,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T23:12:45",
+      "confirmed_at": "2026-04-30T23:12:45",
+      "paid_at": "2026-04-30T23:12:45",
+      "delivered_at": "2026-04-30T23:12:45",
+      "delivery_text": "<b>🛴 Аренда самоката</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-KMCLW9": {
+      "order_id": "ORD-20260430-KMCLW9",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "city": "Аренда",
+      "item_id": "SCOOTER-TARIFF-MAX",
+      "item_title": "🛴 Тариф Максимум",
+      "items": [
+        {
+          "category": "Аренда",
+          "item_id": "SCOOTER-TARIFF-MAX",
+          "title": "🛴 Тариф Максимум",
+          "price": 703,
+          "qty": 1
+        }
+      ],
+      "price": 703,
+      "discount": 0,
+      "total": 703,
+      "promo_code": "",
+      "status": "paid",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T23:19:36",
+      "confirmed_at": "2026-04-30T23:20:09",
+      "paid_at": "2026-04-30T23:20:09",
+      "delivered_at": "2026-04-30T23:20:09",
+      "delivery_text": "<b>🛴 Тариф Максимум</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-WOIN6V": {
+      "order_id": "ORD-20260430-WOIN6V",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "city": "Аренда",
+      "item_id": "SCOOTER-TARIFF-MID",
+      "item_title": "🛴 Тариф Средний",
+      "items": [
+        {
+          "category": "Аренда",
+          "item_id": "SCOOTER-TARIFF-MID",
+          "title": "🛴 Тариф Средний",
+          "price": 351,
+          "qty": 1
+        }
+      ],
+      "price": 351,
+      "discount": 0,
+      "total": 351,
+      "promo_code": "",
+      "status": "paid_balance",
+      "payment_method": "balance",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T23:25:47",
+      "confirmed_at": "2026-04-30T23:25:47",
+      "paid_at": "2026-04-30T23:25:47",
+      "delivered_at": "2026-04-30T23:25:47",
+      "delivery_text": "<b>🛴 Тариф Средний</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260430-SYR3DB": {
+      "order_id": "ORD-20260430-SYR3DB",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "city": "Аренда",
+      "item_id": "SCOOTER-TARIFF-MAX",
+      "item_title": "🛴 Тариф Максимум",
+      "items": [
+        {
+          "category": "Аренда",
+          "item_id": "SCOOTER-TARIFF-MAX",
+          "title": "🛴 Тариф Максимум",
+          "price": 703,
+          "qty": 1
+        }
+      ],
+      "price": 703,
+      "discount": 0,
+      "total": 703,
+      "promo_code": "",
+      "status": "paid",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-04-30T23:27:26",
+      "confirmed_at": "2026-04-30T23:27:49",
+      "paid_at": "2026-04-30T23:27:49",
+      "delivered_at": "2026-04-30T23:27:49",
+      "delivery_text": "<b>🛴 Тариф Максимум</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код.",
+      "scooter_model": "ninebot 90s",
+      "payment_proof_photo_id": "",
+      "payment_proof_text": "",
+      "payment_proof_status": "",
+      "payment_proof_at": ""
+    },
+    "ORD-20260503-50PKCX": {
+      "order_id": "ORD-20260503-50PKCX",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "city": "Аренда",
+      "item_id": "SCOOTER-TARIFF-MAX",
+      "item_title": "🛴 Тариф Максимум",
+      "scooter_model": "",
+      "items": [
+        {
+          "category": "Аренда",
+          "item_id": "SCOOTER-TARIFF-MAX",
+          "title": "🛴 Тариф Максимум",
+          "model": "",
+          "price": 703,
+          "qty": 1
+        }
+      ],
+      "price": 703,
+      "discount": 0,
+      "total": 703,
+      "promo_code": "",
+      "status": "refunded",
+      "payment_method": "manual",
+      "payment_id": "",
+      "purchase_counted": true,
+      "referral_bonus_applied": false,
+      "created_at": "2026-05-03T02:29:50",
+      "confirmed_at": "2026-05-03T02:50:59",
+      "paid_at": "2026-05-03T02:50:59",
+      "delivered_at": "2026-05-03T02:50:59",
+      "payment_proof_status": "confirmed",
+      "payment_proof_photo_id": "AgACAgEAAxkBAAICm2n2bNs1rl5SUM9Sbh7IVVRMtQp-AALKDGsbOi64Rx98ytW13poWAQADAgADbQADOwQ",
+      "payment_proof_text": "",
+      "payment_proof_at": "2026-05-03T02:30:05",
+      "delivery_text": "<b>🛴 Тариф Максимум</b>\nОплата принята. Нажмите кнопку «🛴 Арендовать самокат» и отправьте номер самоката или QR-код."
+    }
+  },
+  "tickets": {
+    "TIC-20260418-PULM86": {
+      "ticket_id": "TIC-20260418-PULM86",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "text": "123123",
+      "status": "closed",
+      "created_at": "2026-04-18T01:53:04",
+      "type": "support",
+      "messages": [
+        {
+          "role": "user",
+          "text": "123123",
+          "created_at": "2026-04-18T01:53:04"
+        }
+      ]
+    },
+    "TIC-20260427-QSDD55": {
+      "ticket_id": "TIC-20260427-QSDD55",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "text": "123123123",
+      "status": "new_message",
+      "created_at": "2026-04-27T00:59:51",
+      "type": "support",
+      "messages": [
+        {
+          "role": "user",
+          "text": "123123123",
+          "created_at": "2026-04-27T00:59:51"
+        }
+      ]
+    },
+    "TOP-20260430-P9VUEA": {
+      "ticket_id": "TOP-20260430-P9VUEA",
+      "type": "topup",
+      "amount": 9999,
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "text": "Запрос пополнения баланса на 9999 ₽",
+      "status": "closed",
+      "created_at": "2026-04-30T00:19:12",
+      "resolved_at": "2026-04-30T00:24:36",
+      "receipt_text": "",
+      "receipt_photo_id": ""
+    },
+    "TOP-20260430-HAJM5O": {
+      "ticket_id": "TOP-20260430-HAJM5O",
+      "type": "topup",
+      "amount": 23141234,
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "text": "Запрос пополнения баланса на 23141234 ₽",
+      "status": "closed",
+      "created_at": "2026-04-30T00:50:47",
+      "receipt_text": "",
+      "receipt_photo_id": "",
+      "resolved_at": "2026-04-30T23:14:03"
+    },
+    "TIC-20260430-H67F5C": {
+      "ticket_id": "TIC-20260430-H67F5C",
+      "user_id": "6324025626",
+      "username": "ISMAILOV_186",
+      "text": "Я твой рот еба",
+      "status": "new_message",
+      "created_at": "2026-04-30T01:29:08",
+      "type": "support",
+      "messages": [
+        {
+          "role": "user",
+          "text": "Я твой рот еба",
+          "created_at": "2026-04-30T01:29:08"
+        }
+      ]
+    },
+    "TOP-20260430-AH07TD": {
+      "ticket_id": "TOP-20260430-AH07TD",
+      "type": "topup",
+      "amount": 100,
+      "user_id": "6324025626",
+      "username": "ISMAILOV_186",
+      "text": "Запрос пополнения баланса на 100 ₽",
+      "status": "closed",
+      "created_at": "2026-04-30T01:48:15",
+      "receipt_text": "",
+      "receipt_photo_id": "",
+      "resolved_at": "2026-04-30T23:13:54"
+    },
+    "TIC-20260430-F9S7WF": {
+      "ticket_id": "TIC-20260430-F9S7WF",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "text": "12346",
+      "status": "new_message",
+      "created_at": "2026-04-30T01:53:31",
+      "type": "support",
+      "messages": [
+        {
+          "role": "user",
+          "text": "12346",
+          "created_at": "2026-04-30T01:53:31"
+        }
+      ]
+    },
+    "TOP-20260430-6IC18V": {
+      "ticket_id": "TOP-20260430-6IC18V",
+      "type": "topup",
+      "amount": 4321,
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "text": "Пополнение баланса на 4321 ₽",
+      "receipt_text": "",
+      "receipt_photo_id": "AgACAgEAAxkBAAICN2nzmUMRZhcENT-qenjdb4ddo6iPAAIKDGsb1zehRzlM37DiMOcuAQADAgADbQADOwQ",
+      "status": "closed",
+      "created_at": "2026-04-30T23:02:43",
+      "resolved_at": "2026-04-30T23:02:51"
+    }
+  },
+  "reviews": {},
+  "settings": {
+    "main_screen_text": "Аренда самоката по всей стране.\n\nВыберите тариф, оплатите заказ, отправьте скрин оплаты при ручной оплате и затем номер самоката или QR-код.",
+    "main_screen_photo": "AgACAgEAAxkBAAIBqWnyZifMQIdsc_k7eIU5L8_9ww7gAAJlDGsbXnaQR1pJsxVnTOdTAQADAgADeQADOwQ",
+    "payment_contact_username": "@unison_off",
+    "payment_channel_url": "@whooshbuymanager сверху юз не рабочий",
+    "shop_title": "🛴 Whoosh Buy",
+    "faq": "FAQ\n\n1. Как начать аренду? Оплатите тариф и нажмите кнопку «Арендовать самокат».\n2. Что отправить? Номер самоката или фото QR-кода.\n3. Если самокат недоступен, бот покажет сообщение о невозможности аренды.\n4. Пополнение баланса оформляется через профиль.",
+    "payment_currency": "RUB",
+    "auto_payments_enabled": false,
+    "manual_payments_enabled": false,
+    "balance_enabled": true,
+    "sales_enabled": false,
+    "maintenance_mode": false,
+    "notify_admins": true,
+    "moderate_reviews": false,
+    "require_agreement": true,
+    "cashback_percent": 1,
+    "referral_bonus": 100,
+    "low_stock_threshold": 3,
+    "min_topup_amount": 10,
+    "order_ttl_minutes": 120,
+    "features_page_size": 10,
+    "crypto_pay_enabled": false,
+    "crypto_pay_token": "",
+    "crypto_pay_api_url": "https://pay.crypt.bot",
+    "crypto_pay_currency_type": "fiat",
+    "crypto_pay_fiat": "RUB",
+    "crypto_pay_asset": "USDT",
+    "crypto_pay_accepted_assets": "USDT,TON,BTC,ETH,LTC,BNB,TRX,USDC",
+    "crypto_pay_expires_minutes": 60,
+    "referral_enabled": true,
+    "buttons": {
+      "catalog": "🛴 Арендовать самокат",
+      "search": "🔎 Найти тариф",
+      "cart": "🧺 Корзина",
+      "favorites": "⭐ Избранное",
+      "balance": "💳 Баланс",
+      "orders": "🧾 Мои поездки",
+      "reviews": "💬 Отзывы",
+      "support": "🛟 Поддержка",
+      "faq": "❓ FAQ",
+      "agreement": "📜 Правила аренды",
+      "admin": "🛠 Админ-панель"
+    },
+    "topup_requisites": "2204321158241992 озон банк",
+    "manual_payment_requisites": "2204321158241992 озон банк"
+  },
+  "agreement": "Правила аренды самокатов Whoosh Buy\n\n1. Бот предназначен для оформления заявок на краткосрочную аренду самокатов.\n2. Пользователь выбирает тариф, оплачивает заказ доступным способом и отправляет номер самоката или QR-код.\n3. Аренда возможна только для доступных самокатов и только при корректном номере или читаемом QR-коде.\n4. Если выбранный самокат недоступен, повреждён, заблокирован или данные указаны неверно, аренда может быть невозможна.\n5. Пользователь обязан соблюдать ПДД, правила парковки, требования безопасности и не передавать самокат третьим лицам.\n6. Запрещены попытки обхода защиты, вскрытия, несанкционированного доступа и любые незаконные действия с техникой.\n7. Возвраты и спорные ситуации рассматриваются через поддержку внутри бота.",
+  "payments": {
+    "PAY-20260427-2MYOET": {
+      "payment_id": "PAY-20260427-2MYOET",
+      "payload": "pay:PAY-20260427-2MYOET",
+      "kind": "topup",
+      "order_id": "",
+      "user_id": "8214269285",
+      "amount": 1000,
+      "currency": "RUB",
+      "status": "pending",
+      "created_at": "2026-04-27T00:51:38",
+      "provider": "legacy"
+    },
+    "PAY-20260427-J3U3K4": {
+      "payment_id": "PAY-20260427-J3U3K4",
+      "payload": "pay:PAY-20260427-J3U3K4",
+      "kind": "topup",
+      "order_id": "",
+      "user_id": "8214269285",
+      "amount": 1000,
+      "currency": "RUB",
+      "status": "pending",
+      "created_at": "2026-04-27T00:52:08",
+      "provider": "legacy"
+    },
+    "PAY-20260427-72O8GQ": {
+      "payment_id": "PAY-20260427-72O8GQ",
+      "payload": "pay:PAY-20260427-72O8GQ",
+      "kind": "order",
+      "order_id": "ORD-20260427-CCM405",
+      "user_id": "8214269285",
+      "amount": 10000,
+      "currency": "RUB",
+      "status": "pending",
+      "created_at": "2026-04-27T00:52:33",
+      "provider": "legacy"
+    },
+    "PAY-20260427-RRZ6MZ": {
+      "payment_id": "PAY-20260427-RRZ6MZ",
+      "payload": "pay:PAY-20260427-RRZ6MZ",
+      "kind": "order",
+      "order_id": "ORD-20260427-U0W46S",
+      "user_id": "8214269285",
+      "amount": 125,
+      "currency": "RUB",
+      "status": "pending",
+      "created_at": "2026-04-27T00:54:11",
+      "provider": "legacy"
+    },
+    "PAY-20260427-ZBRLYX": {
+      "payment_id": "PAY-20260427-ZBRLYX",
+      "payload": "pay:PAY-20260427-ZBRLYX",
+      "kind": "order",
+      "order_id": "ORD-20260427-YAAH4H",
+      "user_id": "8214269285",
+      "amount": 10000,
+      "currency": "RUB",
+      "status": "pending",
+      "created_at": "2026-04-27T01:48:41",
+      "provider": "legacy"
+    },
+    "PAY-20260427-TBTN5M": {
+      "payment_id": "PAY-20260427-TBTN5M",
+      "payload": "pay:PAY-20260427-TBTN5M",
+      "kind": "order",
+      "order_id": "ORD-20260427-BO47O5",
+      "user_id": "8214269285",
+      "amount": 3499,
+      "currency": "RUB",
+      "status": "pending",
+      "created_at": "2026-04-27T01:49:15",
+      "provider": "legacy"
+    },
+    "PAY-20260427-IW4UDT": {
+      "payment_id": "PAY-20260427-IW4UDT",
+      "payload": "pay:PAY-20260427-IW4UDT",
+      "kind": "order",
+      "order_id": "ORD-20260427-5MXX6T",
+      "user_id": "8214269285",
+      "amount": 10000,
+      "currency": "RUB",
+      "status": "pending",
+      "created_at": "2026-04-27T03:53:37",
+      "provider": "legacy"
+    }
+  },
+  "promo_codes": {
+    "START10": {
+      "code": "START10",
+      "type": "percent",
+      "amount": 10,
+      "active": true,
+      "uses": 0,
+      "max_uses": 100,
+      "created_at": "2026-04-27T00:46:17"
+    },
+    "CODE": {
+      "code": "CODE",
+      "type": "percent",
+      "amount": 10,
+      "active": true,
+      "uses": 3,
+      "max_uses": 100,
+      "created_at": "2026-04-27T03:45:52"
+    }
+  },
+  "broadcasts": {
+    "BRC-20260427-PT54F3": {
+      "text": "12345 ПРОВЕРКА",
+      "target": "all",
+      "sent": 4,
+      "created_at": "2026-04-27T03:52:37"
+    },
+    "BRC-20260503-MECV9U": {
+      "text": "Катайся быстрее с Whoosh Buy",
+      "target": "all",
+      "sent": 6,
+      "created_at": "2026-05-03T02:53:11"
+    }
+  },
+  "audit_log": [
+    {
+      "time": "2026-04-27T00:51:38",
+      "actor_id": "8214269285",
+      "action": "topup_invoice_created",
+      "details": "PAY-20260427-2MYOET"
+    },
+    {
+      "time": "2026-04-27T00:52:08",
+      "actor_id": "8214269285",
+      "action": "topup_invoice_created",
+      "details": "PAY-20260427-J3U3K4"
+    },
+    {
+      "time": "2026-04-27T00:52:33",
+      "actor_id": "8214269285",
+      "action": "legacy_invoice_created",
+      "details": "ORD-20260427-CCM405"
+    },
+    {
+      "time": "2026-04-27T00:52:48",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260427-2QVQ22"
+    },
+    {
+      "time": "2026-04-27T00:54:11",
+      "actor_id": "8214269285",
+      "action": "legacy_invoice_created",
+      "details": "ORD-20260427-U0W46S"
+    },
+    {
+      "time": "2026-04-27T00:54:19",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260427-5S1A00"
+    },
+    {
+      "time": "2026-04-27T00:54:47",
+      "actor_id": "8214269285",
+      "action": "backup_created",
+      "details": "backups\\shop_data_20260427_005447.json"
+    },
+    {
+      "time": "2026-04-27T00:55:29",
+      "actor_id": "8214269285",
+      "action": "close_ticket",
+      "details": "TIC-20260418-PULM86"
+    },
+    {
+      "time": "2026-04-27T00:56:07",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "sales_enabled"
+    },
+    {
+      "time": "2026-04-27T00:56:14",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "maintenance_mode"
+    },
+    {
+      "time": "2026-04-27T00:56:23",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "manual_payments_enabled"
+    },
+    {
+      "time": "2026-04-27T00:56:47",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260427-5S1A00"
+    },
+    {
+      "time": "2026-04-27T00:59:13",
+      "actor_id": "8214269285",
+      "action": "edit_item_delivery_text",
+      "details": "МОС-1"
+    },
+    {
+      "time": "2026-04-27T00:59:26",
+      "actor_id": "8214269285",
+      "action": "balance_payment",
+      "details": "ORD-20260427-L0BQ9S"
+    },
+    {
+      "time": "2026-04-27T00:59:51",
+      "actor_id": "8214269285",
+      "action": "ticket_created",
+      "details": "TIC-20260427-QSDD55"
+    },
+    {
+      "time": "2026-04-27T01:00:11",
+      "actor_id": "8214269285",
+      "action": "reply_user",
+      "details": "8214269285"
+    },
+    {
+      "time": "2026-04-27T01:48:41",
+      "actor_id": "8214269285",
+      "action": "legacy_invoice_created",
+      "details": "ORD-20260427-YAAH4H"
+    },
+    {
+      "time": "2026-04-27T01:49:15",
+      "actor_id": "8214269285",
+      "action": "legacy_invoice_created",
+      "details": "ORD-20260427-BO47O5"
+    },
+    {
+      "time": "2026-04-27T03:45:10",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260427-BO47O5"
+    },
+    {
+      "time": "2026-04-27T03:45:52",
+      "actor_id": "8214269285",
+      "action": "create_promo",
+      "details": "CODE"
+    },
+    {
+      "time": "2026-04-27T03:46:52",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "crypto_pay_enabled"
+    },
+    {
+      "time": "2026-04-27T03:49:53",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "manual_payments_enabled"
+    },
+    {
+      "time": "2026-04-27T03:50:46",
+      "actor_id": "8214269285",
+      "action": "edit_button_label",
+      "details": "balance"
+    },
+    {
+      "time": "2026-04-27T03:51:15",
+      "actor_id": "8214269285",
+      "action": "edit_marketing_setting",
+      "details": "referral_bonus"
+    },
+    {
+      "time": "2026-04-27T03:52:37",
+      "actor_id": "8214269285",
+      "action": "broadcast",
+      "details": "all | 4"
+    },
+    {
+      "time": "2026-04-27T03:52:52",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "sales_enabled"
+    },
+    {
+      "time": "2026-04-27T03:53:37",
+      "actor_id": "8214269285",
+      "action": "legacy_invoice_created",
+      "details": "ORD-20260427-5MXX6T"
+    },
+    {
+      "time": "2026-04-27T03:54:28",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260427-C0FM3N"
+    },
+    {
+      "time": "2026-04-27T03:54:57",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260427-C0FM3N"
+    },
+    {
+      "time": "2026-04-27T03:55:15",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260427-5MXX6T"
+    },
+    {
+      "time": "2026-04-27T03:55:31",
+      "actor_id": "8214269285",
+      "action": "reply_user",
+      "details": "8214269285"
+    },
+    {
+      "time": "2026-04-27T03:56:45",
+      "actor_id": "8214269285",
+      "action": "export_orders",
+      "details": "exports\\orders_20260427_035645.csv"
+    },
+    {
+      "time": "2026-04-27T03:57:29",
+      "actor_id": "8214269285",
+      "action": "remove_admin",
+      "details": "7377251494"
+    },
+    {
+      "time": "2026-04-27T03:57:37",
+      "actor_id": "8214269285",
+      "action": "make_admin",
+      "details": "7377251494"
+    },
+    {
+      "time": "2026-04-27T03:57:40",
+      "actor_id": "8214269285",
+      "action": "remove_admin",
+      "details": "7377251494"
+    },
+    {
+      "time": "2026-04-27T03:59:03",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "sales_enabled"
+    },
+    {
+      "time": "2026-04-27T03:59:28",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "maintenance_mode"
+    },
+    {
+      "time": "2026-04-27T04:00:22",
+      "actor_id": "8286730775",
+      "action": "manual_order_created",
+      "details": "ORD-20260427-RQ7FJN"
+    },
+    {
+      "time": "2026-04-27T04:00:45",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260427-RQ7FJN"
+    },
+    {
+      "time": "2026-04-27T04:01:06",
+      "actor_id": "8214269285",
+      "action": "toggle_block_user",
+      "details": "8286730775"
+    },
+    {
+      "time": "2026-04-27T04:01:34",
+      "actor_id": "8214269285",
+      "action": "reply_user",
+      "details": "8286730775"
+    },
+    {
+      "time": "2026-04-27T04:01:58",
+      "actor_id": "8214269285",
+      "action": "make_admin",
+      "details": "8286730775"
+    },
+    {
+      "time": "2026-04-27T04:02:14",
+      "actor_id": "8214269285",
+      "action": "remove_admin",
+      "details": "8286730775"
+    },
+    {
+      "time": "2026-04-27T04:02:31",
+      "actor_id": "8214269285",
+      "action": "sub_balance",
+      "details": "8286730775 | 1000"
+    },
+    {
+      "time": "2026-04-27T04:02:47",
+      "actor_id": "8214269285",
+      "action": "toggle_block_user",
+      "details": "8286730775"
+    },
+    {
+      "time": "2026-04-27T04:03:04",
+      "actor_id": "8214269285",
+      "action": "add_balance",
+      "details": "8286730775 | 999999999999999999999999999999999999999999999999999999999999999999999999999"
+    },
+    {
+      "time": "2026-04-27T04:04:01",
+      "actor_id": "8286730775",
+      "action": "balance_payment",
+      "details": "ORD-20260427-9PMU6T"
+    },
+    {
+      "time": "2026-04-27T04:04:32",
+      "actor_id": "8286730775",
+      "action": "review_created",
+      "details": "REV-20260427-VKE848"
+    },
+    {
+      "time": "2026-04-27T04:04:56",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "notify_admins"
+    },
+    {
+      "time": "2026-04-27T04:05:05",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "notify_admins"
+    },
+    {
+      "time": "2026-04-30T00:14:40",
+      "actor_id": "8214269285",
+      "action": "balance_payment",
+      "details": "ORD-20260430-GNGFEA"
+    },
+    {
+      "time": "2026-04-30T00:14:50",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-8O00NP"
+    },
+    {
+      "time": "2026-04-30T00:14:54",
+      "actor_id": "8214269285",
+      "action": "rental_ready",
+      "details": "RNT-20260430-8O00NP"
+    },
+    {
+      "time": "2026-04-30T00:19:12",
+      "actor_id": "8214269285",
+      "action": "topup_request_created",
+      "details": "TOP-20260430-P9VUEA"
+    },
+    {
+      "time": "2026-04-30T00:21:26",
+      "actor_id": "8214269285",
+      "action": "balance_payment",
+      "details": "ORD-20260430-UTJUQI"
+    },
+    {
+      "time": "2026-04-30T00:21:40",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-SIDFJF"
+    },
+    {
+      "time": "2026-04-30T00:21:42",
+      "actor_id": "8214269285",
+      "action": "rental_failed",
+      "details": "RNT-20260430-SIDFJF"
+    },
+    {
+      "time": "2026-04-30T00:24:36",
+      "actor_id": "8214269285",
+      "action": "topup_approved",
+      "details": "TOP-20260430-P9VUEA | 9999"
+    },
+    {
+      "time": "2026-04-30T00:50:47",
+      "actor_id": "8214269285",
+      "action": "topup_request_created",
+      "details": "TOP-20260430-HAJM5O"
+    },
+    {
+      "time": "2026-04-30T00:51:13",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260430-SLTS3M"
+    },
+    {
+      "time": "2026-04-30T00:54:26",
+      "actor_id": "8214269285",
+      "action": "rental_ready",
+      "details": "RNT-20260430-SIDFJF"
+    },
+    {
+      "time": "2026-04-30T00:55:07",
+      "actor_id": "8214269285",
+      "action": "balance_payment",
+      "details": "ORD-20260430-KOEIJO"
+    },
+    {
+      "time": "2026-04-30T00:55:17",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-COIO9F"
+    },
+    {
+      "time": "2026-04-30T00:55:21",
+      "actor_id": "8214269285",
+      "action": "rental_ready",
+      "details": "RNT-20260430-COIO9F"
+    },
+    {
+      "time": "2026-04-30T00:56:44",
+      "actor_id": "8214269285",
+      "action": "rename_category",
+      "details": "Аренда -> Тарифы"
+    },
+    {
+      "time": "2026-04-30T00:57:40",
+      "actor_id": "8214269285",
+      "action": "edit_item_title",
+      "details": "SCOOTER-RENT-1"
+    },
+    {
+      "time": "2026-04-30T00:59:42",
+      "actor_id": "8214269285",
+      "action": "edit_item_description",
+      "details": "SCOOTER-RENT-1"
+    },
+    {
+      "time": "2026-04-30T01:01:15",
+      "actor_id": "8214269285",
+      "action": "edit_item_title",
+      "details": "SCOOTER-RENT-1"
+    },
+    {
+      "time": "2026-04-30T01:01:49",
+      "actor_id": "8214269285",
+      "action": "edit_item_description",
+      "details": "SCOOTER-RENT-1"
+    },
+    {
+      "time": "2026-04-30T01:02:51",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "3 дня"
+    },
+    {
+      "time": "2026-04-30T01:03:43",
+      "actor_id": "8214269285",
+      "action": "rename_category",
+      "details": "Тарифы -> Тариф Минимум"
+    },
+    {
+      "time": "2026-04-30T01:04:21",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "7 дней"
+    },
+    {
+      "time": "2026-04-30T01:05:01",
+      "actor_id": "8214269285",
+      "action": "add_category",
+      "details": "Тариф Средний"
+    },
+    {
+      "time": "2026-04-30T01:05:57",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "1 день"
+    },
+    {
+      "time": "2026-04-30T01:06:49",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "3 дня"
+    },
+    {
+      "time": "2026-04-30T01:08:26",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "7 дней"
+    },
+    {
+      "time": "2026-04-30T01:09:11",
+      "actor_id": "8214269285",
+      "action": "add_category",
+      "details": "Тариф Максимум"
+    },
+    {
+      "time": "2026-04-30T01:09:59",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "1 день"
+    },
+    {
+      "time": "2026-04-30T01:10:39",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "3 дня"
+    },
+    {
+      "time": "2026-04-30T01:11:10",
+      "actor_id": "8214269285",
+      "action": "add_item",
+      "details": "7 дней"
+    },
+    {
+      "time": "2026-04-30T01:12:26",
+      "actor_id": "8214269285",
+      "action": "edit_photo",
+      "details": "main_screen_photo"
+    },
+    {
+      "time": "2026-04-30T01:14:21",
+      "actor_id": "8214269285",
+      "action": "edit_payment_setting",
+      "details": "payment_contact_username"
+    },
+    {
+      "time": "2026-04-30T01:14:55",
+      "actor_id": "8214269285",
+      "action": "edit_payment_setting",
+      "details": "payment_channel_url"
+    },
+    {
+      "time": "2026-04-30T01:17:05",
+      "actor_id": "8214269285",
+      "action": "edit_marketing_setting",
+      "details": "cashback_percent"
+    },
+    {
+      "time": "2026-04-30T01:29:08",
+      "actor_id": "6324025626",
+      "action": "ticket_created",
+      "details": "TIC-20260430-H67F5C"
+    },
+    {
+      "time": "2026-04-30T01:29:32",
+      "actor_id": "8214269285",
+      "action": "reply_user",
+      "details": "6324025626"
+    },
+    {
+      "time": "2026-04-30T01:29:58",
+      "actor_id": "8286730775",
+      "action": "manual_order_created",
+      "details": "ORD-20260430-8N5XU4"
+    },
+    {
+      "time": "2026-04-30T01:31:03",
+      "actor_id": "8214269285",
+      "action": "edit_payment_setting",
+      "details": "payment_contact_username"
+    },
+    {
+      "time": "2026-04-30T01:31:22",
+      "actor_id": "8286730775",
+      "action": "manual_order_created",
+      "details": "ORD-20260430-YZN3PK"
+    },
+    {
+      "time": "2026-04-30T01:31:48",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260430-YZN3PK"
+    },
+    {
+      "time": "2026-04-30T01:32:23",
+      "actor_id": "8286730775",
+      "action": "balance_payment",
+      "details": "ORD-20260430-ULTYHU"
+    },
+    {
+      "time": "2026-04-30T01:32:39",
+      "actor_id": "8286730775",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-KP67G3"
+    },
+    {
+      "time": "2026-04-30T01:32:46",
+      "actor_id": "8214269285",
+      "action": "rental_ready",
+      "details": "RNT-20260430-KP67G3"
+    },
+    {
+      "time": "2026-04-30T01:33:47",
+      "actor_id": "8214269285",
+      "action": "edit_payment_setting",
+      "details": "payment_channel_url"
+    },
+    {
+      "time": "2026-04-30T01:34:05",
+      "actor_id": "8286730775",
+      "action": "balance_payment",
+      "details": "ORD-20260430-1BUWHA"
+    },
+    {
+      "time": "2026-04-30T01:34:22",
+      "actor_id": "8286730775",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-UZ6AZ8"
+    },
+    {
+      "time": "2026-04-30T01:46:04",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260430-1BUWHA"
+    },
+    {
+      "time": "2026-04-30T01:46:24",
+      "actor_id": "8214269285",
+      "action": "make_admin",
+      "details": "6324025626"
+    },
+    {
+      "time": "2026-04-30T01:46:51",
+      "actor_id": "8214269285",
+      "action": "add_balance",
+      "details": "6324025626 | 999999999999999999999999999999999999999"
+    },
+    {
+      "time": "2026-04-30T01:47:03",
+      "actor_id": "8214269285",
+      "action": "make_admin",
+      "details": "8286730775"
+    },
+    {
+      "time": "2026-04-30T01:47:48",
+      "actor_id": "6324025626",
+      "action": "balance_payment",
+      "details": "ORD-20260430-T04Y2K"
+    },
+    {
+      "time": "2026-04-30T01:48:15",
+      "actor_id": "6324025626",
+      "action": "topup_request_created",
+      "details": "TOP-20260430-AH07TD"
+    },
+    {
+      "time": "2026-04-30T01:48:17",
+      "actor_id": "8286730775",
+      "action": "order_refunded_marked",
+      "details": "ORD-20260430-T04Y2K"
+    },
+    {
+      "time": "2026-04-30T01:49:53",
+      "actor_id": "8286730775",
+      "action": "reply_user",
+      "details": "6324025626"
+    },
+    {
+      "time": "2026-04-30T01:50:25",
+      "actor_id": "8286730775",
+      "action": "rental_ready",
+      "details": "RNT-20260430-UZ6AZ8"
+    },
+    {
+      "time": "2026-04-30T01:50:33",
+      "actor_id": "8286730775",
+      "action": "rental_ready",
+      "details": "RNT-20260430-KP67G3"
+    },
+    {
+      "time": "2026-04-30T01:53:31",
+      "actor_id": "8286730775",
+      "action": "ticket_created",
+      "details": "TIC-20260430-F9S7WF"
+    },
+    {
+      "time": "2026-04-30T01:53:53",
+      "actor_id": "8286730775",
+      "action": "remove_admin",
+      "details": "6324025626"
+    },
+    {
+      "time": "2026-04-30T23:02:43",
+      "actor_id": "8214269285",
+      "action": "topup_receipt_created",
+      "details": "TOP-20260430-6IC18V"
+    },
+    {
+      "time": "2026-04-30T23:02:51",
+      "actor_id": "8214269285",
+      "action": "topup_approved",
+      "details": "TOP-20260430-6IC18V | 4321"
+    },
+    {
+      "time": "2026-04-30T23:03:56",
+      "actor_id": "8214269285",
+      "action": "balance_payment",
+      "details": "ORD-20260430-GT61O2"
+    },
+    {
+      "time": "2026-04-30T23:04:17",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-LHX7KL"
+    },
+    {
+      "time": "2026-04-30T23:10:35",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260430-XY02UU"
+    },
+    {
+      "time": "2026-04-30T23:11:04",
+      "actor_id": "8214269285",
+      "action": "order_confirmed",
+      "details": "ORD-20260430-XY02UU"
+    },
+    {
+      "time": "2026-04-30T23:12:45",
+      "actor_id": "8214269285",
+      "action": "balance_payment",
+      "details": "ORD-20260430-0XUX58"
+    },
+    {
+      "time": "2026-04-30T23:12:59",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-XXC5CY"
+    },
+    {
+      "time": "2026-04-30T23:13:02",
+      "actor_id": "8214269285",
+      "action": "rental_ready",
+      "details": "RNT-20260430-XXC5CY"
+    },
+    {
+      "time": "2026-04-30T23:13:54",
+      "actor_id": "8214269285",
+      "action": "topup_approved",
+      "details": "TOP-20260430-AH07TD | 100"
+    },
+    {
+      "time": "2026-04-30T23:14:03",
+      "actor_id": "8214269285",
+      "action": "topup_approved",
+      "details": "TOP-20260430-HAJM5O | 23141234"
+    },
+    {
+      "time": "2026-04-30T23:14:24",
+      "actor_id": "8214269285",
+      "action": "close_ticket",
+      "details": "TOP-20260430-6IC18V"
+    },
+    {
+      "time": "2026-04-30T23:15:18",
+      "actor_id": "8286730775",
+      "action": "rental_ready",
+      "details": "RNT-20260430-XXC5CY"
+    },
+    {
+      "time": "2026-04-30T23:19:36",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260430-KMCLW9"
+    },
+    {
+      "time": "2026-04-30T23:20:09",
+      "actor_id": "8286730775",
+      "action": "order_confirmed",
+      "details": "ORD-20260430-KMCLW9"
+    },
+    {
+      "time": "2026-04-30T23:20:38",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-M00Q3R"
+    },
+    {
+      "time": "2026-04-30T23:20:40",
+      "actor_id": "8214269285",
+      "action": "rental_ready",
+      "details": "RNT-20260430-M00Q3R"
+    },
+    {
+      "time": "2026-04-30T23:24:35",
+      "actor_id": "8286730775",
+      "action": "rental_ready",
+      "details": "RNT-20260430-M00Q3R"
+    },
+    {
+      "time": "2026-04-30T23:25:47",
+      "actor_id": "8214269285",
+      "action": "balance_payment",
+      "details": "ORD-20260430-WOIN6V"
+    },
+    {
+      "time": "2026-04-30T23:26:15",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-ZYX6HL"
+    },
+    {
+      "time": "2026-04-30T23:26:19",
+      "actor_id": "8214269285",
+      "action": "rental_failed",
+      "details": "RNT-20260430-ZYX6HL"
+    },
+    {
+      "time": "2026-04-30T23:26:33",
+      "actor_id": "8286730775",
+      "action": "rental_ready",
+      "details": "RNT-20260430-ZYX6HL"
+    },
+    {
+      "time": "2026-04-30T23:27:26",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260430-SYR3DB"
+    },
+    {
+      "time": "2026-04-30T23:27:49",
+      "actor_id": "8286730775",
+      "action": "order_confirmed",
+      "details": "ORD-20260430-SYR3DB"
+    },
+    {
+      "time": "2026-04-30T23:28:40",
+      "actor_id": "8214269285",
+      "action": "rental_request_created",
+      "details": "RNT-20260430-W92Q5Y"
+    },
+    {
+      "time": "2026-04-30T23:28:48",
+      "actor_id": "8214269285",
+      "action": "rental_ready",
+      "details": "RNT-20260430-W92Q5Y"
+    },
+    {
+      "time": "2026-05-01T00:06:40",
+      "actor_id": "8286730775",
+      "action": "rental_ready",
+      "details": "RNT-20260430-W92Q5Y"
+    },
+    {
+      "time": "2026-05-03T02:29:50",
+      "actor_id": "8214269285",
+      "action": "manual_order_created",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:30:05",
+      "actor_id": "8214269285",
+      "action": "manual_order_receipt_created",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:30:08",
+      "actor_id": "8214269285",
+      "action": "order_rejected",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:31:30",
+      "actor_id": "8214269285",
+      "action": "edit_payment_setting",
+      "details": "topup_requisites"
+    },
+    {
+      "time": "2026-05-03T02:31:40",
+      "actor_id": "8214269285",
+      "action": "toggle_setting",
+      "details": "manual_payments_enabled"
+    },
+    {
+      "time": "2026-05-03T02:31:57",
+      "actor_id": "8214269285",
+      "action": "edit_payment_setting",
+      "details": "manual_payment_requisites"
+    },
+    {
+      "time": "2026-05-03T02:50:59",
+      "actor_id": "8286730775",
+      "action": "order_confirmed",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:51:02",
+      "actor_id": "8286730775",
+      "action": "order_confirmed",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:51:08",
+      "actor_id": "8286730775",
+      "action": "order_rejected",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:51:11",
+      "actor_id": "8286730775",
+      "action": "order_confirmed",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:51:22",
+      "actor_id": "8286730775",
+      "action": "order_refunded_marked",
+      "details": "ORD-20260503-50PKCX"
+    },
+    {
+      "time": "2026-05-03T02:52:41",
+      "actor_id": "8286730775",
+      "action": "rental_failed",
+      "details": "RNT-20260430-W92Q5Y"
+    },
+    {
+      "time": "2026-05-03T02:53:11",
+      "actor_id": "8286730775",
+      "action": "broadcast",
+      "details": "all | 6"
+    }
+  ],
+  "schema_version": 12,
+  "rental_requests": {
+    "RNT-20260430-8O00NP": {
+      "request_id": "RNT-20260430-8O00NP",
+      "order_id": "ORD-20260430-GNGFEA",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "scooter_code": "123",
+      "qr_photo_id": "",
+      "status": "ready",
+      "created_at": "2026-04-30T00:14:50",
+      "resolved_at": "2026-04-30T00:14:54",
+      "resolved_by": "8214269285"
+    },
+    "RNT-20260430-SIDFJF": {
+      "request_id": "RNT-20260430-SIDFJF",
+      "order_id": "ORD-20260430-UTJUQI",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "scooter_code": "123",
+      "qr_photo_id": "",
+      "status": "ready",
+      "created_at": "2026-04-30T00:21:40",
+      "resolved_at": "2026-04-30T00:54:26",
+      "resolved_by": "8214269285"
+    },
+    "RNT-20260430-COIO9F": {
+      "request_id": "RNT-20260430-COIO9F",
+      "order_id": "ORD-20260430-KOEIJO",
+      "user_id": "8214269285",
+      "username": "unison_off",
+      "scooter_code": "121",
+      "qr_photo_id": "",
+      "status": "ready",
+      "created_at": "2026-04-30T00:55:17",
+      "resolved_at": "2026-04-30T00:55:21",
+      "resolved_by": "8214269285"
+    },
+    "RNT-20260430-KP67G3": {
+      "request_id": "RNT-20260430-KP67G3",
+      "order_id": "ORD-20260430-ULTYHU",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "scooter_code": "",
+      "qr_photo_id": "AgACAgIAAxkBAAIB4GnyauRk8M0LN95iygmgFpwQLoCIAAJAG2sbSEuRS_-oiktCnCf-AQADAgADeQADOwQ",
+      "status": "ready",
+      "created_at": "2026-04-30T01:32:39",
+      "resolved_at": "2026-04-30T01:50:33",
+      "resolved_by": "8286730775"
+    },
+    "RNT-20260430-UZ6AZ8": {
+      "request_id": "RNT-20260430-UZ6AZ8",
+      "order_id": "ORD-20260430-1BUWHA",
+      "user_id": "8286730775",
+      "username": "H186B",
+      "scooter_code": "",
+      "qr_photo_id": "AgACAgIAAxkBAAIB8Wnya0tyhNPkc9SrtPCGDAIcVSrQAAIvF2sbgByQS1fe70TQJegsAQADAgADeQADOwQ",
+      "status": "ready",
+      "created_at": "2026-04-30T01:34:22",
+      "resolved_at": "2026-04-30T01:50:25",
+      "resolved_by": "8286730775"
+    },
+    "RNT-20260430-LHX7KL": {
+      "request_id": "RNT-20260430-LHX7KL",
+      "order_id": "ORD-20260430-GT61O2",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "scooter_code": "AA1233",
+      "qr_photo_id": "",
+      "status": "new",
+      "created_at": "2026-04-30T23:04:17",
+      "resolved_at": ""
+    },
+    "RNT-20260430-XXC5CY": {
+      "request_id": "RNT-20260430-XXC5CY",
+      "order_id": "ORD-20260430-0XUX58",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "scooter_code": "AA1234",
+      "qr_photo_id": "",
+      "status": "ready",
+      "created_at": "2026-04-30T23:12:59",
+      "resolved_at": "2026-04-30T23:15:18",
+      "resolved_by": "8286730775"
+    },
+    "RNT-20260430-M00Q3R": {
+      "request_id": "RNT-20260430-M00Q3R",
+      "order_id": "ORD-20260430-KMCLW9",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "scooter_code": "AA1234",
+      "qr_photo_id": "",
+      "status": "ready",
+      "created_at": "2026-04-30T23:20:38",
+      "resolved_at": "2026-04-30T23:24:35",
+      "resolved_by": "8286730775"
+    },
+    "RNT-20260430-ZYX6HL": {
+      "request_id": "RNT-20260430-ZYX6HL",
+      "order_id": "ORD-20260430-WOIN6V",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "scooter_code": "AA1221",
+      "qr_photo_id": "",
+      "status": "ready",
+      "created_at": "2026-04-30T23:26:15",
+      "resolved_at": "2026-04-30T23:26:33",
+      "resolved_by": "8286730775"
+    },
+    "RNT-20260430-W92Q5Y": {
+      "request_id": "RNT-20260430-W92Q5Y",
+      "order_id": "ORD-20260430-SYR3DB",
+      "user_id": "8214269285",
+      "username": "whooshbuymanager",
+      "scooter_code": "AA234",
+      "qr_photo_id": "",
+      "status": "failed",
+      "created_at": "2026-04-30T23:28:40",
+      "resolved_at": "2026-05-03T02:52:41",
+      "resolved_by": "8286730775"
+    }
+  }
+}
