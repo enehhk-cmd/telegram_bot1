@@ -7,6 +7,7 @@ import os
 import random
 import re
 import string
+import time
 from copy import deepcopy
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
@@ -84,6 +85,14 @@ def h(value: Any) -> str:
     return html.escape(str(value), quote=False)
 
 
+_MD_SPECIAL = re.compile(r"([_*\[\]()~`>#+=|{}.!\\-])")
+
+
+def escape_markdown(value: Any) -> str:
+    """Escape all MarkdownV2 special characters in a string."""
+    return _MD_SPECIAL.sub(r"\\\1", str(value))
+
+
 def clean_username(username: str | None) -> str:
     return (username or "").lstrip("@").strip()
 
@@ -125,25 +134,25 @@ def is_valid_scooter_code(value: str) -> bool:
 
 def scooter_code_help_table() -> str:
     return (
-        "🚫 <b>Самокат не найден</b>\n\n"
-        "<pre>"
+        "🚫 *Самокат не найден*\n\n"
+        "```\n"
         "Вариация  Пример\n"
         "AA0000    AC1111\n"
         "AA000A    AC123A"
-        "</pre>\n"
-        "Введите код английскими буквами и цифрами без пробелов или отправьте фото QR-кода."
+        "```\n"
+        "Введите код английскими буквами и цифрами без пробелов или отправьте фото QR\\-кода\\."
     )
 
 
 def scooter_found_text(rental: dict[str, Any]) -> str:
-    scooter_number = rental.get("scooter_code") or "QR-код"
+    scooter_number = escape_markdown(rental.get("scooter_code") or "QR-код")
     return (
-        "✅ <b>Самокат найден</b>\n\n"
-        "<pre>"
+        "✅ *Самокат найден*\n\n"
+        "```\n"
         f"Модель: {SCOOTER_MODEL}\n"
         f"Заряд:  {int(rental.get('battery_percent', 50))}%\n"
         f"Номер:  {scooter_number}"
-        "</pre>\n"
+        "```\n"
         "Вы готовы активировать данный самокат?"
     )
 
@@ -301,7 +310,7 @@ def default_data() -> dict[str, Any]:
         "audit_log": [],
         "settings": default_settings(),
         "agreement": default_agreement(),
-        "schema_version": 12,
+        "schema_version": 13,
     }
 
 
@@ -343,6 +352,7 @@ def ensure_user_defaults(user: dict[str, Any]) -> bool:
         "notes": "",
         "tags": [],
         "admin_on_duty": True,
+        "last_message_time": 0,
     }
     for key, value in defaults.items():
         if key not in user:
@@ -604,7 +614,13 @@ def migrate_data(data: dict[str, Any]) -> tuple[dict[str, Any], bool]:
                 ticket["receipt_photo_id"] = ""
                 changed = True
 
-    data["schema_version"] = 12
+    if int(data.get("schema_version", 0) or 0) < 13:
+        for user in data.get("users", {}).values():
+            if "last_message_time" not in user:
+                user["last_message_time"] = 0
+                changed = True
+
+    data["schema_version"] = 13
     return data, changed
 
 
@@ -821,8 +837,28 @@ def apply_referral(data: dict[str, Any], user: dict[str, Any], payload: str | No
     if not referrer or referrer["id"] == user["id"]:
         return False
     user["referred_by"] = referrer["id"]
+    bonus = int(data["settings"].get("referral_bonus", 0) or 0)
+    if bonus > 0:
+        referrer["balance"] = int(referrer.get("balance", 0)) + bonus
+        user["balance"] = int(user.get("balance", 0)) + bonus // 2
+        audit(data, user["id"], "referral_bonus_awarded", f"referrer={referrer['id']} bonus={bonus} new_user_bonus={bonus // 2}")
     audit(data, user["id"], "referral_attached", referrer["id"])
     return True
+
+
+RATE_LIMIT_SECONDS = 1.5
+
+
+def check_rate_limit(user: dict[str, Any]) -> bool:
+    """Return True if the user is sending messages too fast (should be ignored)."""
+    now = time.time()
+    last = float(user.get("last_message_time", 0) or 0)
+    return (now - last) < RATE_LIMIT_SECONDS
+
+
+def update_rate_limit(user: dict[str, Any]) -> None:
+    """Record the current timestamp as the user's last message time."""
+    user["last_message_time"] = time.time()
 
 
 def order_items_from_product(category: str, item: dict[str, Any]) -> list[dict[str, Any]]:
@@ -890,7 +926,7 @@ def build_delivery_text(data: dict[str, Any], order: dict[str, Any]) -> str:
     for row in order.get("items", []):
         item = get_item(data, row["category"], row["item_id"])
         delivery = (item or {}).get("delivery_text") or "Выдача для тарифа пока не настроена. Ответ появится здесь в боте."
-        blocks.append(f"<b>{h(row['title'])}</b>\n{h(delivery)}")
+        blocks.append(f"*{escape_markdown(row['title'])}*\n{escape_markdown(delivery)}")
     return "\n\n".join(blocks)
 
 
@@ -1023,16 +1059,16 @@ def admin_panel_keyboard(user: dict[str, Any] | None = None) -> InlineKeyboardMa
 
 
 async def send_or_edit(update: Update, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
-    text = text[:3900] + "\n\n..." if len(text) > 3900 else text
+    text = text[:3900] + "\n\n\\.\\.\\." if len(text) > 3900 else text
     query = update.callback_query
     if query:
         await query.answer()
         try:
-            await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+            await query.edit_message_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN_V2)
         except Exception:
-            await query.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+            await query.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN_V2)
     elif update.message:
-        await update.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.HTML)
+        await update.message.reply_text(text=text, reply_markup=reply_markup, parse_mode=ParseMode.MARKDOWN_V2)
 
 
 async def notify_admins(context: ContextTypes.DEFAULT_TYPE, data: dict[str, Any], text: str) -> None:
@@ -1043,7 +1079,7 @@ async def notify_admins(context: ContextTypes.DEFAULT_TYPE, data: dict[str, Any]
         if admin_user and not admin_user.get("admin_on_duty", True):
             continue
         try:
-            await context.bot.send_message(chat_id=int(admin_id), text=text, parse_mode=ParseMode.HTML)
+            await context.bot.send_message(chat_id=int(admin_id), text=text, parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as exc:
             logger.warning("Failed to notify admin %s: %s", admin_id, exc)
 
@@ -1053,16 +1089,16 @@ async def show_main(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
     if is_blocked(user):
-        await send_or_edit(update, "Доступ к боту ограничен. Напишите в поддержку.", rows_with_home([], admin))
+        await send_or_edit(update, "Доступ к боту ограничен\\. Напишите в поддержку\\.", rows_with_home([], admin))
         return
     if data["settings"].get("maintenance_mode") and not admin:
-        await send_or_edit(update, "Бот временно на обслуживании. Попробуйте позже.", rows_with_home([], admin))
+        await send_or_edit(update, "🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", rows_with_home([], admin))
         return
 
-    text = f"<b>{h(data['settings'].get('shop_title', 'Digital Shop'))}</b>\n\n{h(data['settings']['main_screen_text'])}"
+    text = f"*{escape_markdown(data['settings'].get('shop_title', 'Digital Shop'))}*\n\n{escape_markdown(data['settings']['main_screen_text'])}"
     photo = data["settings"].get("main_screen_photo")
     if update.message and photo:
-        await update.message.reply_photo(photo=photo, caption=text, reply_markup=main_menu(data, admin), parse_mode=ParseMode.HTML)
+        await update.message.reply_photo(photo=photo, caption=text, reply_markup=main_menu(data, admin), parse_mode=ParseMode.MARKDOWN_V2)
     else:
         await send_or_edit(update, text, main_menu(data, admin))
 
@@ -1071,8 +1107,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     clear_state(context)
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
+    admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
     payload = context.args[0] if context.args else ""
-    if apply_referral(data, user, payload):
+    if payload and apply_referral(data, user, payload):
         save_data(data)
     await show_main(update, context)
 
@@ -1088,23 +1128,31 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await show_main(update, context)
         return
     if is_blocked(user):
-        await send_or_edit(update, "Доступ к боту ограничен.", rows_with_home([], admin))
+        await send_or_edit(update, "Доступ к боту ограничен\\.", rows_with_home([], admin))
         return
+    if data["settings"].get("maintenance_mode") and not admin:
+        await send_or_edit(update, "🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", rows_with_home([], admin))
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     if action == "menu:catalog":
         category = first_catalog_category(data)
-        await send_or_edit(update, "<b>🛴 Арендовать самокат</b>\n\nВыберите тариф аренды.", products_keyboard(data, category, admin))
+        await send_or_edit(update, "*🛴 Арендовать самокат*\n\nВыберите тариф аренды\\.", products_keyboard(data, category, admin))
         return
     if action == "menu:profile":
         text = (
-            "<b>👤 Профиль</b>\n\n"
-            f"ID: <code>{h(user['id'])}</code>\n"
-            f"Username: @{h(user.get('username') or '-')}\n"
-            f"Имя: {h(user.get('full_name') or '-')}\n"
-            f"Покупок: <b>{int(user.get('purchases_count', 0))}</b>\n"
-            f"Баланс: <b>{money(user.get('balance', 0), payment_currency(data))}</b>\n"
-            f"Промокод: <b>{h(user.get('active_promo') or 'не применён')}</b>\n"
-            f"Рассылки: <b>{'включены' if user.get('subscribed', True) else 'выключены'}</b>\n"
-            f"Реф-код: <code>ref_{h(user.get('referral_code'))}</code>"
+            "*👤 Профиль*\n\n"
+            f"ID: `{escape_markdown(user['id'])}`\n"
+            f"Username: @{escape_markdown(user.get('username') or '-')}\n"
+            f"Имя: {escape_markdown(user.get('full_name') or '-')}\n"
+            f"Покупок: *{int(user.get('purchases_count', 0))}*\n"
+            f"Баланс: *{escape_markdown(money(user.get('balance', 0), payment_currency(data)))}*\n"
+            f"Промокод: *{escape_markdown(user.get('active_promo') or 'не применён')}*\n"
+            f"Рассылки: *{'включены' if user.get('subscribed', True) else 'выключены'}*\n"
+            f"Реф\\-код: `ref_{escape_markdown(user.get('referral_code'))}`"
         )
         rows = [
             [InlineKeyboardButton("🎟 Ввести промокод", callback_data="menu:promo")],
@@ -1116,7 +1164,7 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if action == "menu:toggle_subscribe":
         user["subscribed"] = not user.get("subscribed", True)
         save_data(data)
-        await send_or_edit(update, "Настройка рассылок обновлена.", rows_with_home([[InlineKeyboardButton("Профиль", callback_data="menu:profile")]], admin))
+        await send_or_edit(update, "Настройка рассылок обновлена\\.", rows_with_home([[InlineKeyboardButton("Профиль", callback_data="menu:profile")]], admin))
         return
     if action == "menu:orders":
         orders = [order for order in data["orders"].values() if str(order.get("user_id")) == user["id"]]
@@ -1125,34 +1173,34 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             [InlineKeyboardButton(f"{order['order_id']} | {status_label(order.get('status', ''))}", callback_data=f"order:{order['order_id']}")]
             for order in orders[:25]
         ]
-        text = "<b>🧾 Мои поездки</b>" if rows else "<b>🧾 Мои поездки</b>\n\nПоездок пока нет."
+        text = "*🧾 Мои поездки*" if rows else "*🧾 Мои поездки*\n\nПоездок пока нет\\."
         await send_or_edit(update, text, rows_with_home(rows, admin))
         return
     if action == "menu:reviews":
         reviews = [review for review in data["reviews"].values() if review.get("status", "approved") == "approved"]
         reviews.sort(key=lambda item: item.get("created_at", ""), reverse=True)
-        text = "<b>Последние отзывы</b>\n\n"
+        text = "*Последние отзывы*\n\n"
         text += "\n".join(
-            f"• <b>{h(review.get('author_name', 'Пользователь'))}</b> — {h(review.get('item_title', 'товар'))}: {h(review.get('text', ''))}"
+            f"• *{escape_markdown(review.get('author_name', 'Пользователь'))}* — {escape_markdown(review.get('item_title', 'товар'))}: {escape_markdown(review.get('text', ''))}"
             for review in reviews[:15]
-        ) or "Отзывов пока нет."
+        ) or "Отзывов пока нет\\."
         await send_or_edit(update, text, rows_with_home([], admin))
         return
     if action == "menu:support":
         clear_state(context)
         context.user_data["state"] = {"name": "support"}
-        await send_or_edit(update, "🛟 <b>Поддержка</b>\n\nНапишите вопрос следующим сообщением. Ответ появится здесь в боте.", rows_with_home([], admin))
+        await send_or_edit(update, "🛟 *Поддержка*\n\nНапишите вопрос следующим сообщением\\. Ответ появится здесь в боте\\.", rows_with_home([], admin))
         return
     if action == "menu:faq":
-        await send_or_edit(update, f"<b>FAQ</b>\n\n{h(data['settings'].get('faq', 'FAQ пока не заполнен.'))}", rows_with_home([], admin))
+        await send_or_edit(update, f"*FAQ*\n\n{escape_markdown(data['settings'].get('faq', 'FAQ пока не заполнен.'))}", rows_with_home([], admin))
         return
     if action == "menu:agreement":
-        await send_or_edit(update, f"<b>Соглашение</b>\n\n{h(data.get('agreement', default_agreement()))}", rows_with_home([], admin))
+        await send_or_edit(update, f"*Соглашение*\n\n{escape_markdown(data.get('agreement', default_agreement()))}", rows_with_home([], admin))
         return
     if action == "menu:search":
         clear_state(context)
         context.user_data["state"] = {"name": "search"}
-        await send_or_edit(update, "Напишите часть названия тарифа следующим сообщением.", rows_with_home([], admin))
+        await send_or_edit(update, "Напишите часть названия тарифа следующим сообщением\\.", rows_with_home([], admin))
         return
     if action == "menu:cart":
         await show_cart(update, context, data, user, admin)
@@ -1167,15 +1215,15 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             item = get_item(data, category, item_id)
             if item and product_available(item):
                 rows.append([InlineKeyboardButton(f"{item['title']} | {money(item['price'], payment_currency(data))}", callback_data=f"product:{category}:{item_id}")])
-        text = "<b>Избранное</b>" if rows else "<b>Избранное</b>\n\nПока пусто."
+        text = "*Избранное*" if rows else "*Избранное*\n\nПока пусто\\."
         await send_or_edit(update, text, rows_with_home(rows, admin))
         return
     if action == "menu:balance":
         text = (
-            "<b>💳 Баланс</b>\n\n"
-            f"Баланс: <b>{money(user.get('balance', 0), payment_currency(data))}</b>\n"
-            f"Пополнение: <b>по реквизитам и скрину оплаты</b>\n"
-            f"Валюта: <b>{h(payment_currency(data))}</b>"
+            "*💳 Баланс*\n\n"
+            f"Баланс: *{escape_markdown(money(user.get('balance', 0), payment_currency(data)))}*\n"
+            f"Пополнение: *по реквизитам и скрину оплаты*\n"
+            f"Валюта: *{escape_markdown(payment_currency(data))}*"
         )
         rows = [[InlineKeyboardButton("💳 Пополнить по реквизитам", callback_data="menu:topup")]]
         await send_or_edit(update, text, rows_with_home(rows, admin))
@@ -1183,12 +1231,12 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     if action == "menu:topup":
         clear_state(context)
         context.user_data["state"] = {"name": "topup_amount"}
-        await send_or_edit(update, f"<b>💳 Пополнение баланса</b>\n\nВведите сумму пополнения от {data['settings'].get('min_topup_amount', 10)} ₽.", rows_with_home([], admin))
+        await send_or_edit(update, f"*💳 Пополнение баланса*\n\nВведите сумму пополнения от {escape_markdown(str(data['settings'].get('min_topup_amount', 10)))} ₽\\.", rows_with_home([], admin))
         return
     if action == "menu:promo":
         clear_state(context)
         context.user_data["state"] = {"name": "promo"}
-        await send_or_edit(update, "Введите промокод следующим сообщением.", rows_with_home([], admin))
+        await send_or_edit(update, "Введите промокод следующим сообщением\\.", rows_with_home([], admin))
         return
 
 
@@ -1196,15 +1244,23 @@ async def topup_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     state = context.user_data.get("state") or {}
     if update.callback_query.data == "topup:paid":
         if state.get("name") != "topup_wait_paid" or not state.get("amount"):
-            await send_or_edit(update, "💳 Начните пополнение заново через профиль.", rows_with_home([[InlineKeyboardButton("👤 Профиль", callback_data="menu:profile")]], admin))
+            await send_or_edit(update, "💳 Начните пополнение заново через профиль\\.", rows_with_home([[InlineKeyboardButton("👤 Профиль", callback_data="menu:profile")]], admin))
             return
         context.user_data["state"] = {"name": "topup_receipt", "amount": int(state["amount"])}
         await send_or_edit(
             update,
-            "📸 <b>Скрин оплаты</b>\n\nОтправьте скрин оплаты одним фото. После этого заявка попадёт в раздел «💳 Пополнения».",
+            "📸 *Скрин оплаты*\n\nОтправьте скрин оплаты одним фото\\. После этого заявка попадёт в раздел «💳 Пополнения»\\.",
             rows_with_home([], admin),
         )
         return
@@ -1214,29 +1270,45 @@ async def category_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     category = update.callback_query.data.split(":", 1)[1]
     if category not in data["catalog"]:
-        await send_or_edit(update, "Категория не найдена.", rows_with_home([], admin))
+        await send_or_edit(update, "Категория не найдена\\.", rows_with_home([], admin))
         return
-    await send_or_edit(update, f"<b>🛴 {h(category)}</b>\n\nВыберите тариф аренды.", products_keyboard(data, category, admin))
+    await send_or_edit(update, f"*🛴 {escape_markdown(category)}*\n\nВыберите тариф аренды\\.", products_keyboard(data, category, admin))
 
 
 async def product_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     _, category, item_id = update.callback_query.data.split(":", 2)
     item = get_item(data, category, item_id)
     if not item:
-        await send_or_edit(update, "Товар не найден.", rows_with_home([], admin))
+        await send_or_edit(update, "Товар не найден\\.", rows_with_home([], admin))
         return
     stock = "без ограничений" if int(item.get("stock", -1)) < 0 else str(item.get("stock", 0))
     text = (
-        f"<b>{h(item['title'])}</b>\n\n"
-        f"{h(item.get('description', ''))}\n\n"
-        f"💰 Цена: <b>{money(item['price'], payment_currency(data))}</b>\n"
-        f"🛴 Доступность: <b>{h(stock)}</b>\n"
-        f"✅ Аренд оформлено: <b>{int(item.get('sold_count', 0))}</b>"
+        f"*{escape_markdown(item['title'])}*\n\n"
+        f"{escape_markdown(item.get('description', ''))}\n\n"
+        f"💰 Цена: *{escape_markdown(money(item['price'], payment_currency(data)))}*\n"
+        f"🛴 Доступность: *{escape_markdown(stock)}*\n"
+        f"✅ Аренд оформлено: *{int(item.get('sold_count', 0))}*"
     )
     await send_or_edit(update, text, product_keyboard(data, category, item, user, admin))
 
@@ -1245,19 +1317,27 @@ async def favorite_router(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     _, _, category, item_id = update.callback_query.data.split(":", 3)
     item = get_item(data, category, item_id)
     if not item:
-        await send_or_edit(update, "Товар не найден.", rows_with_home([], admin))
+        await send_or_edit(update, "Товар не найден\\.", rows_with_home([], admin))
         return
     key = item_key(category, item_id)
     user.setdefault("favorites", [])
     if key in user["favorites"]:
         user["favorites"].remove(key)
-        text = "Товар убран из избранного."
+        text = "Товар убран из избранного\\."
     else:
         user["favorites"].append(key)
-        text = "Товар добавлен в избранное."
+        text = "Товар добавлен в избранное\\."
     save_data(data)
     await send_or_edit(update, text, rows_with_home([[InlineKeyboardButton("Вернуться к товару", callback_data=f"product:{category}:{item_id}")]], admin))
 
@@ -1266,6 +1346,14 @@ async def cart_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     parts = update.callback_query.data.split(":")
     action = parts[1]
 
@@ -1273,7 +1361,7 @@ async def cart_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         category, item_id = parts[2], parts[3]
         item = get_item(data, category, item_id)
         if not item or not product_available(item):
-            await send_or_edit(update, "Товар недоступен.", rows_with_home([], admin))
+            await send_or_edit(update, "Товар недоступен\\.", rows_with_home([], admin))
             return
         key = item_key(category, item_id)
         user.setdefault("cart", {})
@@ -1281,7 +1369,7 @@ async def cart_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         save_data(data)
         await send_or_edit(
             update,
-            "Товар добавлен в корзину.",
+            "Товар добавлен в корзину\\.",
             rows_with_home(
                 [
                     [InlineKeyboardButton("Открыть корзину", callback_data="menu:cart")],
@@ -1316,16 +1404,16 @@ async def cart_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 async def show_cart(update: Update, context: ContextTypes.DEFAULT_TYPE, data: dict[str, Any], user: dict[str, Any], admin: bool) -> None:
     rows_data = get_cart_items(data, user)
     if not rows_data:
-        await send_or_edit(update, "<b>Корзина</b>\n\nКорзина пуста.", rows_with_home([], admin))
+        await send_or_edit(update, "*Корзина*\n\nКорзина пуста\\.", rows_with_home([], admin))
         return
     totals = calculate_total(data, rows_data, user)
-    lines = ["<b>Корзина</b>\n"]
+    lines = ["*Корзина*\n"]
     rows = []
     for row in rows_data:
         item = row["item"]
         category = row["category"]
         qty = int(row["qty"])
-        lines.append(f"• {h(item['title'])} x{qty} — {money(int(item['price']) * qty, payment_currency(data))}")
+        lines.append(f"• {escape_markdown(item['title'])} x{qty} — {escape_markdown(money(int(item['price']) * qty, payment_currency(data)))}")
         rows.append(
             [
                 InlineKeyboardButton("-", callback_data=f"cart:dec:{category}:{item['id']}"),
@@ -1334,11 +1422,11 @@ async def show_cart(update: Update, context: ContextTypes.DEFAULT_TYPE, data: di
                 InlineKeyboardButton("Удалить", callback_data=f"cart:remove:{category}:{item['id']}"),
             ]
         )
-    lines.append(f"\nИтого: <b>{money(totals['total'], payment_currency(data))}</b>")
+    lines.append(f"\nИтого: *{escape_markdown(money(totals['total'], payment_currency(data)))}*")
     if totals["discount"]:
-        lines.append(f"Скидка: <b>{money(totals['discount'], payment_currency(data))}</b>")
+        lines.append(f"Скидка: *{escape_markdown(money(totals['discount'], payment_currency(data)))}*")
     if user.get("active_promo"):
-        lines.append(f"Промокод: <b>{h(user['active_promo'])}</b>")
+        lines.append(f"Промокод: *{escape_markdown(user['active_promo'])}*")
     if data["settings"].get("balance_enabled", True):
         rows.append([InlineKeyboardButton("💳 Оплатить корзину балансом", callback_data="pay:cart_balance")])
     if crypto_pay_ready(data):
@@ -1351,18 +1439,26 @@ async def buy_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     _, category, item_id = update.callback_query.data.split(":", 2)
     item = get_item(data, category, item_id)
     if not item or not product_available(item):
-        await send_or_edit(update, "Товар недоступен.", rows_with_home([], admin))
+        await send_or_edit(update, "Товар недоступен\\.", rows_with_home([], admin))
         return
     totals = calculate_total(data, [{"category": category, "item": item, "qty": 1}], user)
-    promo_line = f"\nПромокод: <b>{h(totals['promo_code'])}</b>, скидка {money(totals['discount'], payment_currency(data))}" if totals["discount"] else ""
+    promo_line = f"\nПромокод: *{escape_markdown(totals['promo_code'])}*, скидка {escape_markdown(money(totals['discount'], payment_currency(data)))}" if totals["discount"] else ""
     text = (
-        "<b>Выберите способ оплаты</b>\n\n"
-        f"🛴 Тариф: <b>{h(item['title'])}</b>\n"
-        f"💰 Сумма: <b>{money(totals['total'], payment_currency(data))}</b>{promo_line}\n\n"
-        "После оплаты появится кнопка «🛴 Арендовать самокат»."
+        "*Выберите способ оплаты*\n\n"
+        f"🛴 Тариф: *{escape_markdown(item['title'])}*\n"
+        f"💰 Сумма: *{escape_markdown(money(totals['total'], payment_currency(data)))}*{promo_line}\n\n"
+        "После оплаты появится кнопка «🛴 Арендовать самокат»\\."
     )
     await send_or_edit(update, text, buy_keyboard(data, category, item_id, admin))
 
@@ -1371,6 +1467,14 @@ async def pay_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     parts = update.callback_query.data.split(":")
     action = parts[1]
 
@@ -1378,27 +1482,27 @@ async def pay_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         category, item_id = parts[2], parts[3]
         item = get_item(data, category, item_id)
         if not item or not product_available(item):
-            await send_or_edit(update, "Товар недоступен.", rows_with_home([], admin))
+            await send_or_edit(update, "Товар недоступен\\.", rows_with_home([], admin))
             return
         rows = [{"category": category, "item": item, "qty": 1}]
     elif action in {"cart_balance", "cart_crypto"}:
         rows = get_cart_items(data, user)
         if not rows:
-            await send_or_edit(update, "Корзина пуста.", rows_with_home([], admin))
+            await send_or_edit(update, "Корзина пуста\\.", rows_with_home([], admin))
             return
         action = {"cart_balance": "balance", "cart_crypto": "crypto"}[action]
     else:
-        await send_or_edit(update, "Неизвестный способ оплаты.", rows_with_home([], admin))
+        await send_or_edit(update, "Неизвестный способ оплаты\\.", rows_with_home([], admin))
         return
 
     totals = calculate_total(data, rows, user)
     if totals["total"] <= 0:
-        await send_or_edit(update, "Сумма заказа должна быть больше нуля.", rows_with_home([], admin))
+        await send_or_edit(update, "Сумма заказа должна быть больше нуля\\.", rows_with_home([], admin))
         return
 
     if action == "balance":
         if int(user.get("balance", 0)) < totals["total"]:
-            await send_or_edit(update, "Недостаточно средств на балансе.", rows_with_home([[InlineKeyboardButton("Пополнить баланс", callback_data="menu:topup")]], admin))
+            await send_or_edit(update, "Недостаточно средств на балансе\\.", rows_with_home([[InlineKeyboardButton("Пополнить баланс", callback_data="menu:topup")]], admin))
             return
         order = create_order(data, user, rows, "balance", "paid_balance")
         user["balance"] = int(user.get("balance", 0)) - totals["total"]
@@ -1409,26 +1513,26 @@ async def pay_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
         save_data(data)
         await send_or_edit(
             update,
-            f"<b>Оплата прошла успешно</b>\n\nID заказа: <code>{order['order_id']}</code>\n\n{order.get('delivery_text', '')}",
+            f"*Оплата прошла успешно*\n\nID заказа: `{escape_markdown(order['order_id'])}`\n\n{order.get('delivery_text', '')}",
             rows_with_home(paid_order_buttons(order["order_id"]), admin),
         )
-        await notify_admins(context, data, f"Новый оплаченный заказ балансом: <code>{order['order_id']}</code>")
+        await notify_admins(context, data, f"Новый оплаченный заказ балансом: `{escape_markdown(order['order_id'])}`")
         return
 
     if action == "manual":
         if not data["settings"].get("manual_payments_enabled", True):
-            await send_or_edit(update, "Ручная оплата сейчас выключена.", rows_with_home([], admin))
+            await send_or_edit(update, "Ручная оплата сейчас выключена\\.", rows_with_home([], admin))
             return
         order = create_order(data, user, rows, "manual", "awaiting_manual")
         order["payment_proof_status"] = "waiting_screenshot"
         audit(data, user["id"], "manual_order_created", order["order_id"])
         save_data(data)
         text = (
-            "<b>🛴 Ручная оплата аренды</b>\n\n"
-            f"ID заказа: <code>{order['order_id']}</code>\n"
-            f"Сумма: <b>{money(order['total'], payment_currency(data))}</b>\n\n"
-            f"<b>Реквизиты</b>\n{h(manual_payment_requisites(data))}\n\n"
-            "После оплаты нажмите «✅ Я оплатил» и отправьте скрин оплаты. Заказ станет доступен после проверки."
+            "*🛴 Ручная оплата аренды*\n\n"
+            f"ID заказа: `{escape_markdown(order['order_id'])}`\n"
+            f"Сумма: *{escape_markdown(money(order['total'], payment_currency(data)))}*\n\n"
+            f"*Реквизиты*\n{escape_markdown(manual_payment_requisites(data))}\n\n"
+            "После оплаты нажмите «✅ Я оплатил» и отправьте скрин оплаты\\. Заказ станет доступен после проверки\\."
         )
         await send_or_edit(
             update,
@@ -1445,13 +1549,12 @@ async def pay_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
 
     if action == "crypto":
         if not crypto_pay_ready(data):
-            await send_or_edit(update, "Crypto Bot не настроен. Добавьте Crypto Pay API token в админке.", rows_with_home([], admin))
+            await send_or_edit(update, "Crypto Bot не настроен\\. Добавьте Crypto Pay API token в админке\\.", rows_with_home([], admin))
             return
         order = create_order(data, user, rows, "crypto_bot", "awaiting_crypto")
         save_data(data)
         await send_crypto_invoice_for_order(update, context, data, order)
         return
-
 
 async def send_crypto_invoice_for_order(
     update: Update,
@@ -1487,7 +1590,7 @@ async def send_crypto_invoice_for_order(
         order["status"] = "awaiting_manual"
         audit(data, order["user_id"], "crypto_invoice_error", str(exc))
         save_data(data)
-        await send_or_edit(update, f"Crypto Bot не создал счёт: {h(exc)}", rows_with_home([[InlineKeyboardButton("К оплате", callback_data="menu:cart")]], is_admin(data, order["user_id"])))
+        await send_or_edit(update, f"Crypto Bot не создал счёт: {escape_markdown(str(exc))}", rows_with_home([[InlineKeyboardButton("К оплате", callback_data="menu:cart")]], is_admin(data, order["user_id"])))
         return
 
     invoice_id = str(invoice.get("invoice_id"))
@@ -1519,10 +1622,10 @@ async def send_crypto_invoice_for_order(
     await send_or_edit(
         update,
         (
-            "<b>Счёт Crypto Bot создан</b>\n\n"
-            f"Заказ: <code>{h(order['order_id'])}</code>\n"
-            f"Сумма: <b>{money(order['total'], crypto_pay_display_currency(data))}</b>\n\n"
-            "После оплаты нажмите Проверить оплату. Бот также будет проверять ожидающие счета автоматически, если установлен job-queue."
+            "*Счёт Crypto Bot создан*\n\n"
+            f"Заказ: `{escape_markdown(order['order_id'])}`\n"
+            f"Сумма: *{escape_markdown(money(order['total'], crypto_pay_display_currency(data)))}*\n\n"
+            "После оплаты нажмите Проверить оплату\\. Бот также будет проверять ожидающие счета автоматически, если установлен job\\-queue\\."
         ),
         rows_with_home(rows, is_admin(data, order["user_id"])),
     )
@@ -1575,7 +1678,8 @@ async def send_crypto_invoice_for_topup(update: Update, context: ContextTypes.DE
         rows.append([InlineKeyboardButton("Открыть оплату Crypto Bot", url=pay_url)])
     rows.append([InlineKeyboardButton("Проверить оплату", callback_data=f"crypto_check:{payment_id}")])
     await update.message.reply_text(
-        f"Счёт Crypto Bot создан на {money(amount, crypto_pay_display_currency(data))}.",
+        f"Счёт Crypto Bot создан на {escape_markdown(money(amount, crypto_pay_display_currency(data)))}\\.",
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=rows_with_home(rows, is_admin(data, user["id"])),
     )
 
@@ -1583,23 +1687,23 @@ async def send_crypto_invoice_for_topup(update: Update, context: ContextTypes.DE
 async def refresh_crypto_payment(data: dict[str, Any], context: ContextTypes.DEFAULT_TYPE, payment_id: str) -> tuple[bool, str]:
     payment = data.get("payments", {}).get(payment_id)
     if not payment or payment.get("provider") != "crypto_bot":
-        return False, "Платёж не найден."
+        return False, "Платёж не найден\\."
     if payment.get("status") == "paid":
-        return True, "Платёж уже обработан."
+        return True, "Платёж уже обработан\\."
     invoice_id = payment.get("invoice_id")
     if not invoice_id:
-        return False, "У платежа нет invoice_id."
+        return False, "У платежа нет invoice\\_id\\."
     result = await crypto_pay_request(data, "getInvoices", {"invoice_ids": str(invoice_id), "count": 1})
     invoices = result.get("items", result) if isinstance(result, dict) else result
     if not invoices:
-        return False, "Счёт не найден в Crypto Bot."
+        return False, "Счёт не найден в Crypto Bot\\."
     invoice = invoices[0]
     payment["raw_invoice"] = invoice
     crypto_status = invoice.get("status")
     payment["crypto_status"] = crypto_status
     if crypto_status != "paid":
         save_data(data)
-        return False, f"Пока не оплачено. Статус Crypto Bot: {crypto_status}."
+        return False, f"Пока не оплачено\\. Статус Crypto Bot: {escape_markdown(str(crypto_status))}\\."
 
     payment["status"] = "paid"
     payment["paid_at"] = invoice.get("paid_at") or now_iso()
@@ -1613,7 +1717,7 @@ async def refresh_crypto_payment(data: dict[str, Any], context: ContextTypes.DEF
         if not order:
             payment["status"] = "paid_without_order"
             save_data(data)
-            return False, "Оплата есть, но заказ не найден."
+            return False, "Оплата есть, но заказ не найден\\."
         complete_order(data, order, "paid_crypto")
         order["payment_id"] = payment_id
         user = data["users"].get(str(order["user_id"]))
@@ -1624,13 +1728,13 @@ async def refresh_crypto_payment(data: dict[str, Any], context: ContextTypes.DEF
         try:
             await context.bot.send_message(
                 chat_id=int(order["user_id"]),
-                text=f"Оплата Crypto Bot подтверждена.\n\nЗаказ <code>{h(order['order_id'])}</code>\n\n{order.get('delivery_text', '')}",
-                parse_mode=ParseMode.HTML,
+                text=f"Оплата Crypto Bot подтверждена\\.\n\nЗаказ `{escape_markdown(order['order_id'])}`\n\n{order.get('delivery_text', '')}",
+                parse_mode=ParseMode.MARKDOWN_V2,
                 reply_markup=rows_with_home(paid_order_buttons(order["order_id"]), is_admin(data, order["user_id"])),
             )
         except Exception:
             pass
-        return True, "Оплата подтверждена, заказ выдан."
+        return True, "Оплата подтверждена, заказ выдан\\."
 
     if payment.get("kind") == "topup":
         target = data["users"].get(str(payment["user_id"]))
@@ -1638,28 +1742,33 @@ async def refresh_crypto_payment(data: dict[str, Any], context: ContextTypes.DEF
             target["balance"] = int(target.get("balance", 0)) + int(payment["amount"])
         audit(data, payment["user_id"], "crypto_topup_success", payment_id)
         save_data(data)
-        return True, "Баланс пополнен."
+        return True, "Баланс пополнен\\."
 
     save_data(data)
-    return True, "Платёж подтверждён."
+    return True, "Платёж подтверждён\\."
 
 
 async def crypto_check_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     payment_id = update.callback_query.data.split(":", 1)[1]
     payment = data.get("payments", {}).get(payment_id)
     if not payment:
-        await send_or_edit(update, "Платёж не найден.", rows_with_home([], admin))
+        await send_or_edit(update, "Платёж не найден\\.", rows_with_home([], admin))
         return
     if str(payment.get("user_id")) != user["id"] and not admin:
-        await send_or_edit(update, "Нет доступа к этому платежу.", rows_with_home([], admin))
+        await send_or_edit(update, "Нет доступа к этому платежу\\.", rows_with_home([], admin))
         return
     try:
         paid, message = await refresh_crypto_payment(data, context, payment_id)
     except Exception as exc:
-        await send_or_edit(update, f"Ошибка проверки Crypto Bot: {h(exc)}", rows_with_home([[InlineKeyboardButton("Повторить", callback_data=f"crypto_check:{payment_id}")]], admin))
+        await send_or_edit(update, f"Ошибка проверки Crypto Bot: {escape_markdown(str(exc))}", rows_with_home([[InlineKeyboardButton("Повторить", callback_data=f"crypto_check:{payment_id}")]], admin))
         return
     rows = []
     if not paid:
@@ -1689,23 +1798,28 @@ async def order_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     order_id = update.callback_query.data.split(":", 1)[1]
     order = data["orders"].get(order_id)
     if not order or (order.get("user_id") != user["id"] and not admin):
-        await send_or_edit(update, "Заказ не найден.", rows_with_home([], admin))
+        await send_or_edit(update, "Заказ не найден\\.", rows_with_home([], admin))
         return
     lines = [
-        "<b>Заказ</b>",
-        f"ID: <code>{h(order['order_id'])}</code>",
-        f"Статус: <b>{h(status_label(order.get('status', '')))}</b>",
-        f"Сумма: <b>{money(order.get('total', order.get('price', 0)), payment_currency(data))}</b>",
+        "*Заказ*",
+        f"ID: `{escape_markdown(order['order_id'])}`",
+        f"Статус: *{escape_markdown(status_label(order.get('status', '')))}*",
+        f"Сумма: *{escape_markdown(money(order.get('total', order.get('price', 0)), payment_currency(data)))}*",
         "",
-        "<b>Состав</b>",
+        "*Состав*",
     ]
     for row in order.get("items", []):
-        lines.append(f"• {h(row['title'])} x{row.get('qty', 1)}")
+        lines.append(f"• {escape_markdown(row['title'])} x{row.get('qty', 1)}")
     if normalize_status(order.get("status", "")) in PAID_STATUSES and order.get("delivery_text"):
-        lines.extend(["", "<b>Выдача</b>", order["delivery_text"]])
+        lines.extend(["", "*Выдача*", order["delivery_text"]])
     rows = []
     if normalize_status(order.get("status", "")) in PAID_STATUSES:
         rows.append([InlineKeyboardButton("🛴 Арендовать самокат", callback_data=f"rent:start:{order_id}")])
@@ -1713,7 +1827,7 @@ async def order_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             rows.append([InlineKeyboardButton("💬 Оставить отзыв", callback_data=f"review:add:{order_id}")])
     if normalize_status(order.get("status", "")) == "awaiting_manual":
         if order.get("payment_proof_status") == "new":
-            lines.extend(["", "📸 Скрин оплаты уже отправлен на проверку."])
+            lines.extend(["", "📸 Скрин оплаты уже отправлен на проверку\\."])
         else:
             rows.append([InlineKeyboardButton("✅ Я оплатил", callback_data=f"manual_paid:{order_id}")])
     payment = data.get("payments", {}).get(order.get("payment_id", ""))
@@ -1733,29 +1847,34 @@ async def order_cancel_router(update: Update, context: ContextTypes.DEFAULT_TYPE
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     order_id = update.callback_query.data.split(":", 1)[1]
     order = data["orders"].get(order_id)
     if not order or order.get("user_id") != user["id"]:
-        await send_or_edit(update, "Заказ не найден.", rows_with_home([], admin))
+        await send_or_edit(update, "Заказ не найден\\.", rows_with_home([], admin))
         return
     if normalize_status(order.get("status", "")) not in PENDING_STATUSES:
-        await send_or_edit(update, "Можно отменить только ожидающий заказ.", rows_with_home([], admin))
+        await send_or_edit(update, "Можно отменить только ожидающий заказ\\.", rows_with_home([], admin))
         return
     order["status"] = "cancelled"
     audit(data, user["id"], "order_cancelled", order_id)
     save_data(data)
-    await send_or_edit(update, "Заказ отменён.", rows_with_home([[InlineKeyboardButton("Мои заказы", callback_data="menu:orders")]], admin))
+    await send_or_edit(update, "Заказ отменён\\.", rows_with_home([[InlineKeyboardButton("Мои заказы", callback_data="menu:orders")]], admin))
 
 
 async def notify_rental_request(context: ContextTypes.DEFAULT_TYPE, data: dict[str, Any], rental: dict[str, Any]) -> None:
     text = (
-        "<b>🛴 Новая заявка на аренду</b>\n\n"
-        f"ID: <code>{h(rental['request_id'])}</code>\n"
-        f"Заказ: <code>{h(rental['order_id'])}</code>\n"
-        f"Пользователь: <code>{h(rental['user_id'])}</code> @{h(rental.get('username') or '-')}\n"
-        f"Модель: <b>{h(rental.get('scooter_model') or SCOOTER_MODEL)}</b>\n"
-        f"Заряд: <b>{h(rental.get('battery_percent', '-'))}%</b>\n"
-        f"Данные самоката: <b>{h(rental.get('scooter_code') or 'QR-фото')}</b>"
+        "*🛴 Новая заявка на аренду*\n\n"
+        f"ID: `{escape_markdown(rental['request_id'])}`\n"
+        f"Заказ: `{escape_markdown(rental['order_id'])}`\n"
+        f"Пользователь: `{escape_markdown(rental['user_id'])}` @{escape_markdown(rental.get('username') or '-')}\n"
+        f"Модель: *{escape_markdown(rental.get('scooter_model') or SCOOTER_MODEL)}*\n"
+        f"Заряд: *{escape_markdown(str(rental.get('battery_percent', '-')))}%*\n"
+        f"Данные самоката: *{escape_markdown(rental.get('scooter_code') or 'QR-фото')}*"
     )
     keyboard = InlineKeyboardMarkup(
         [
@@ -1771,7 +1890,7 @@ async def notify_rental_request(context: ContextTypes.DEFAULT_TYPE, data: dict[s
         if admin_user and not admin_user.get("admin_on_duty", True):
             continue
         try:
-            await context.bot.send_message(chat_id=int(admin_id), text=text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+            await context.bot.send_message(chat_id=int(admin_id), text=text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN_V2)
             if rental.get("qr_photo_id"):
                 await context.bot.send_photo(chat_id=int(admin_id), photo=rental["qr_photo_id"], caption=f"QR для заявки {rental['request_id']}")
         except Exception as exc:
@@ -1789,11 +1908,11 @@ async def save_rental_request(
 ) -> None:
     order = data["orders"].get(order_id)
     if not order or order.get("user_id") != user["id"] or normalize_status(order.get("status", "")) not in PAID_STATUSES:
-        await update.message.reply_text("🛴 Для аренды нужен оплаченный заказ.")
+        await update.message.reply_text("🛴 Для аренды нужен оплаченный заказ\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     scooter_code = normalize_scooter_code(scooter_code)
     if not qr_photo_id and not is_valid_scooter_code(scooter_code):
-        await update.message.reply_text(scooter_code_help_table(), parse_mode=ParseMode.HTML)
+        await update.message.reply_text(scooter_code_help_table(), parse_mode=ParseMode.MARKDOWN_V2)
         return
     request_id = generate_id("RNT")
     rental = {
@@ -1816,7 +1935,7 @@ async def save_rental_request(
     clear_state(context)
     await update.message.reply_text(
         scooter_found_text(rental),
-        parse_mode=ParseMode.HTML,
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=rows_with_home(
             [[InlineKeyboardButton("🛴 Активировать самокат", callback_data=f"rent:activate:{request_id}")]],
             is_admin(data, user["id"]),
@@ -1826,14 +1945,14 @@ async def save_rental_request(
 
 async def notify_topup_request(context: ContextTypes.DEFAULT_TYPE, data: dict[str, Any], ticket: dict[str, Any]) -> None:
     text = (
-        "<b>💳 Новый чек пополнения</b>\n\n"
-        f"ID: <code>{h(ticket['ticket_id'])}</code>\n"
-        f"Пользователь: <code>{h(ticket['user_id'])}</code> @{h(ticket.get('username') or '-')}\n"
-        f"Сумма: <b>{money(ticket.get('amount', 0), payment_currency(data))}</b>\n"
-        f"Чек: <b>{'фото' if ticket.get('receipt_photo_id') else 'текст'}</b>"
+        "*💳 Новый чек пополнения*\n\n"
+        f"ID: `{escape_markdown(ticket['ticket_id'])}`\n"
+        f"Пользователь: `{escape_markdown(ticket['user_id'])}` @{escape_markdown(ticket.get('username') or '-')}\n"
+        f"Сумма: *{escape_markdown(money(ticket.get('amount', 0), payment_currency(data)))}*\n"
+        f"Чек: *{'фото' if ticket.get('receipt_photo_id') else 'текст'}*"
     )
     if ticket.get("receipt_text"):
-        text += f"\n\n{h(ticket.get('receipt_text', ''))}"
+        text += f"\n\n{escape_markdown(ticket.get('receipt_text', ''))}"
     keyboard = InlineKeyboardMarkup(
         [
             [
@@ -1854,10 +1973,10 @@ async def notify_topup_request(context: ContextTypes.DEFAULT_TYPE, data: dict[st
                     photo=ticket["receipt_photo_id"],
                     caption=text,
                     reply_markup=keyboard,
-                    parse_mode=ParseMode.HTML,
+                    parse_mode=ParseMode.MARKDOWN_V2,
                 )
             else:
-                await context.bot.send_message(chat_id=int(admin_id), text=text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
+                await context.bot.send_message(chat_id=int(admin_id), text=text, reply_markup=keyboard, parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as exc:
             logger.warning("Failed to notify topup admin %s: %s", admin_id, exc)
 
@@ -1873,10 +1992,10 @@ async def save_topup_request(
 ) -> None:
     if amount <= 0:
         clear_state(context)
-        await update.message.reply_text("💳 Сумма пополнения не найдена. Начните пополнение заново через профиль.")
+        await update.message.reply_text("💳 Сумма пополнения не найдена\\. Начните пополнение заново через профиль\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     if not receipt_photo_id:
-        await update.message.reply_text("📸 Для подтверждения пополнения нужен скрин оплаты фотографией.")
+        await update.message.reply_text("📸 Для подтверждения пополнения нужен скрин оплаты фотографией\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     ticket_id = generate_id("TOP")
     data["tickets"][ticket_id] = {
@@ -1895,8 +2014,8 @@ async def save_topup_request(
     save_data(data)
     clear_state(context)
     await update.message.reply_text(
-        "💳 <b>Чек принят</b>\n\nЗаявка на пополнение отправлена на проверку. Баланс обновится после подтверждения.",
-        parse_mode=ParseMode.HTML,
+        "💳 *Чек принят*\n\nЗаявка на пополнение отправлена на проверку\\. Баланс обновится после подтверждения\\.",
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=rows_with_home([[InlineKeyboardButton("👤 Профиль", callback_data="menu:profile")]], is_admin(data, user["id"])),
     )
     await notify_topup_request(context, data, data["tickets"][ticket_id])
@@ -1904,13 +2023,13 @@ async def save_topup_request(
 
 async def notify_manual_order_receipt(context: ContextTypes.DEFAULT_TYPE, data: dict[str, Any], order: dict[str, Any]) -> None:
     text = (
-        "<b>🛴 Новый скрин оплаты аренды</b>\n\n"
-        f"Заказ: <code>{h(order['order_id'])}</code>\n"
-        f"Пользователь: <code>{h(order['user_id'])}</code> @{h(order.get('username') or '-')}\n"
-        f"Сумма: <b>{money(order.get('total', order.get('price', 0)), payment_currency(data))}</b>"
+        "*🛴 Новый скрин оплаты аренды*\n\n"
+        f"Заказ: `{escape_markdown(order['order_id'])}`\n"
+        f"Пользователь: `{escape_markdown(order['user_id'])}` @{escape_markdown(order.get('username') or '-')}\n"
+        f"Сумма: *{escape_markdown(money(order.get('total', order.get('price', 0)), payment_currency(data)))}*"
     )
     if order.get("payment_proof_text"):
-        text += f"\n\n{h(order.get('payment_proof_text', ''))}"
+        text += f"\n\n{escape_markdown(order.get('payment_proof_text', ''))}"
     keyboard = InlineKeyboardMarkup(
         [
             [
@@ -1930,7 +2049,7 @@ async def notify_manual_order_receipt(context: ContextTypes.DEFAULT_TYPE, data: 
                 photo=order["payment_proof_photo_id"],
                 caption=text,
                 reply_markup=keyboard,
-                parse_mode=ParseMode.HTML,
+                parse_mode=ParseMode.MARKDOWN_V2,
             )
         except Exception as exc:
             logger.warning("Failed to notify manual order admin %s: %s", admin_id, exc)
@@ -1948,7 +2067,7 @@ async def save_manual_order_receipt(
     order = data["orders"].get(order_id)
     if not order or order.get("user_id") != user["id"] or normalize_status(order.get("status", "")) != "awaiting_manual":
         clear_state(context)
-        await update.message.reply_text("🧾 Заказ для подтверждения оплаты не найден.")
+        await update.message.reply_text("🧾 Заказ для подтверждения оплаты не найден\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     order["payment_proof_photo_id"] = receipt_photo_id
     order["payment_proof_text"] = receipt_text[:1500]
@@ -1958,8 +2077,8 @@ async def save_manual_order_receipt(
     save_data(data)
     clear_state(context)
     await update.message.reply_text(
-        "📸 <b>Скрин оплаты принят</b>\n\nЗаказ отправлен на проверку. После подтверждения появится кнопка аренды.",
-        parse_mode=ParseMode.HTML,
+        "📸 *Скрин оплаты принят*\n\nЗаказ отправлен на проверку\\. После подтверждения появится кнопка аренды\\.",
+        parse_mode=ParseMode.MARKDOWN_V2,
         reply_markup=rows_with_home([[InlineKeyboardButton("🧾 Мои поездки", callback_data="menu:orders")]], is_admin(data, user["id"])),
     )
     await notify_manual_order_receipt(context, data, order)
@@ -1969,16 +2088,21 @@ async def manual_payment_router(update: Update, context: ContextTypes.DEFAULT_TY
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     order_id = update.callback_query.data.split(":", 1)[1]
     order = data["orders"].get(order_id)
     if not order or order.get("user_id") != user["id"] or normalize_status(order.get("status", "")) != "awaiting_manual":
-        await send_or_edit(update, "🧾 Заказ для ручной оплаты не найден.", rows_with_home([], admin))
+        await send_or_edit(update, "🧾 Заказ для ручной оплаты не найден\\.", rows_with_home([], admin))
         return
     clear_state(context)
     context.user_data["state"] = {"name": "manual_order_receipt", "order_id": order_id}
     await send_or_edit(
         update,
-        "📸 <b>Скрин оплаты аренды</b>\n\nОтправьте скрин оплаты одним фото. После проверки заказ станет доступен для аренды.",
+        "📸 *Скрин оплаты аренды*\n\nОтправьте скрин оплаты одним фото\\. После проверки заказ станет доступен для аренды\\.",
         rows_with_home([], admin, ("🧾 К заказу", f"order:{order_id}")),
     )
 
@@ -1987,15 +2111,23 @@ async def rental_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.callback_query.answer()
+        return
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     parts = update.callback_query.data.split(":")
     if parts[:2] == ["rent", "activate"]:
         request_id = parts[2]
         rental = data.get("rental_requests", {}).get(request_id)
         if not rental or rental.get("user_id") != user["id"]:
-            await send_or_edit(update, "🛴 Самокат не найден. Отправьте номер ещё раз.", rows_with_home([], admin))
+            await send_or_edit(update, "🛴 Самокат не найден\\. Отправьте номер ещё раз\\.", rows_with_home([], admin))
             return
         if rental.get("status") != "awaiting_activation":
-            await send_or_edit(update, "🛴 Заявка уже отправлена.", rows_with_home([[InlineKeyboardButton("🧾 Мои поездки", callback_data="menu:orders")]], admin))
+            await send_or_edit(update, "🛴 Заявка уже отправлена\\.", rows_with_home([[InlineKeyboardButton("🧾 Мои поездки", callback_data="menu:orders")]], admin))
             return
         rental["status"] = "new"
         rental["activated_at"] = now_iso()
@@ -2003,7 +2135,7 @@ async def rental_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         save_data(data)
         await send_or_edit(
             update,
-            "🛴 <b>Активация отправлена</b>\n\nМы проверим доступность самоката. Ответ появится здесь.",
+            "🛴 *Активация отправлена*\n\nМы проверим доступность самоката\\. Ответ появится здесь\\.",
             rows_with_home([[InlineKeyboardButton("🧾 Мои поездки", callback_data="menu:orders")]], admin),
         )
         await notify_rental_request(context, data, rental)
@@ -2012,20 +2144,26 @@ async def rental_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
         order_id = parts[2]
         order = data["orders"].get(order_id)
         if not order or order.get("user_id") != user["id"] or normalize_status(order.get("status", "")) not in PAID_STATUSES:
-            await send_or_edit(update, "🛴 Для аренды нужен оплаченный заказ.", rows_with_home([], admin))
+            await send_or_edit(update, "🛴 Для аренды нужен оплаченный заказ\\.", rows_with_home([], admin))
             return
         clear_state(context)
         context.user_data["state"] = {"name": "rental_request", "order_id": order_id}
         await send_or_edit(
             update,
-            "<b>🛴 Арендовать самокат</b>\n\nОтправьте номер самоката текстом или фото QR-кода.",
+            "*🛴 Арендовать самокат*\n\nОтправьте номер самоката текстом или фото QR\\-кода\\.",
             rows_with_home([], admin, ("🧾 К заказу", f"order:{order_id}")),
         )
 
 
 async def reviews_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
+    user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
     parts = update.callback_query.data.split(":")
     if parts[:2] == ["reviews", "item"]:
         category, item_id = parts[2], parts[3]
@@ -2035,25 +2173,25 @@ async def reviews_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
             for review in data["reviews"].values()
             if review.get("category", review.get("city")) == category and review.get("item_id") == item_id and review.get("status", "approved") == "approved"
         ]
-        text = f"<b>Отзывы о {h(item['title'] if item else 'товаре')}</b>\n\n"
-        text += "\n".join(f"• <b>{h(review.get('author_name', 'Пользователь'))}</b>: {h(review.get('text', ''))}" for review in reviews[:15]) or "Пока отзывов нет."
+        text = f"*Отзывы о {escape_markdown(item['title'] if item else 'товаре')}*\n\n"
+        text += "\n".join(f"• *{escape_markdown(review.get('author_name', 'Пользователь'))}*: {escape_markdown(review.get('text', ''))}" for review in reviews[:15]) or "Пока отзывов нет\\."
         await send_or_edit(update, text, rows_with_home([], admin, ("К товару", f"product:{category}:{item_id}")))
         return
     if parts[:2] == ["review", "add"]:
         order_id = parts[2]
         order = data["orders"].get(order_id)
         if not order or order.get("user_id") != str(update.effective_user.id):
-            await send_or_edit(update, "Нельзя оставить отзыв для этого заказа.", rows_with_home([], admin))
+            await send_or_edit(update, "Нельзя оставить отзыв для этого заказа\\.", rows_with_home([], admin))
             return
         if normalize_status(order.get("status", "")) not in PAID_STATUSES:
-            await send_or_edit(update, "Отзыв можно оставить только после оплаты.", rows_with_home([], admin))
+            await send_or_edit(update, "Отзыв можно оставить только после оплаты\\.", rows_with_home([], admin))
             return
         if any(review.get("order_id") == order_id for review in data["reviews"].values()):
-            await send_or_edit(update, "Отзыв по этому заказу уже оставлен.", rows_with_home([], admin))
+            await send_or_edit(update, "Отзыв по этому заказу уже оставлен\\.", rows_with_home([], admin))
             return
         clear_state(context)
         context.user_data["state"] = {"name": "review", "order_id": order_id}
-        await send_or_edit(update, "Напишите отзыв следующим сообщением.", rows_with_home([], admin, ("К заказу", f"order:{order_id}")))
+        await send_or_edit(update, "Напишите отзыв следующим сообщением\\.", rows_with_home([], admin, ("К заказу", f"order:{order_id}")))
 
 
 def dashboard_text(data: dict[str, Any]) -> str:
@@ -2065,16 +2203,16 @@ def dashboard_text(data: dict[str, Any]) -> str:
     products = sum(len(items) for items in data["catalog"].values())
     active_products = sum(1 for items in data["catalog"].values() for item in items if item.get("active", True))
     return (
-        "<b>Дашборд</b>\n\n"
-        f"Пользователи: <b>{len(users)}</b>\n"
-        f"Заказы: <b>{len(orders)}</b>\n"
-        f"Ожидают оплаты: <b>{len(pending_orders)}</b>\n"
-        f"Оплачены: <b>{len(paid_orders)}</b>\n"
-        f"Оборот: <b>{money(revenue, payment_currency(data))}</b>\n"
-        f"Категории: <b>{len(data['catalog'])}</b>\n"
-        f"Товары: <b>{active_products}/{products}</b>\n"
-        f"Платежи: <b>{len(data.get('payments', {}))}</b>\n"
-        f"Тикеты: <b>{len(data.get('tickets', {}))}</b>"
+        "*Дашборд*\n\n"
+        f"Пользователи: *{len(users)}*\n"
+        f"Заказы: *{len(orders)}*\n"
+        f"Ожидают оплаты: *{len(pending_orders)}*\n"
+        f"Оплачены: *{len(paid_orders)}*\n"
+        f"Оборот: *{escape_markdown(money(revenue, payment_currency(data)))}*\n"
+        f"Категории: *{len(data['catalog'])}*\n"
+        f"Товары: *{active_products}/{products}*\n"
+        f"Платежи: *{len(data.get('payments', {}))}*\n"
+        f"Тикеты: *{len(data.get('tickets', {}))}*"
     )
 
 
@@ -2117,14 +2255,14 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     if not is_admin(data, update.effective_user.id):
-        await send_or_edit(update, "Нет доступа.", rows_with_home([], False))
+        await send_or_edit(update, "Нет доступа\\.", rows_with_home([], False))
         return
     parts = update.callback_query.data.split(":")
     action = update.callback_query.data
 
     if action == "admin:panel":
         clear_state(context)
-        await send_or_edit(update, "<b>Админ-панель</b>\n\nВсе основные действия доступны кнопками.", admin_panel_keyboard(user))
+        await send_or_edit(update, "*Админ\\-панель*\n\nВсе основные действия доступны кнопками\\.", admin_panel_keyboard(user))
         return
     if action == "admin:dashboard":
         await send_or_edit(update, dashboard_text(data), rows_with_home([[InlineKeyboardButton("Экспорт заказов CSV", callback_data="admin:export_orders")]], True))
@@ -2133,7 +2271,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         path = export_orders_csv(data)
         audit(data, user["id"], "export_orders", str(path))
         save_data(data)
-        await send_or_edit(update, f"CSV экспорт создан:\n<code>{h(path.resolve())}</code>", rows_with_home([], True))
+        await send_or_edit(update, f"CSV экспорт создан:\n`{escape_markdown(str(path.resolve()))}`", rows_with_home([], True))
         return
     if action == "admin:manual_payments":
         orders = [
@@ -2156,7 +2294,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             for order in orders[:40]
         ]
         text = (
-            "<b>🧾 Оплаты аренды</b>\n\n"
+            "*🧾 Оплаты аренды*\n\n"
             "📸 новый скрин — можно проверять\n"
             "⏳ ждёт скрин — пользователь ещё не отправил фото\n"
             "✅ подтверждено / ❌ отклонено — обработано"
@@ -2185,26 +2323,26 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             ]
         )
         rows.append([InlineKeyboardButton("Отклонённые", callback_data="admin:orders:rejected")])
-        await send_or_edit(update, f"<b>Заказы</b>\n\nФильтр: {h(filter_name)}", rows_with_home(rows, True))
+        await send_or_edit(update, f"*Заказы*\n\nФильтр: {escape_markdown(filter_name)}", rows_with_home(rows, True))
         return
     if parts[:2] == ["admin", "view_order"]:
         order = data["orders"].get(parts[2])
         if not order:
-            await send_or_edit(update, "Заказ не найден.", admin_panel_keyboard(user))
+            await send_or_edit(update, "Заказ не найден\\.", admin_panel_keyboard(user))
             return
         lines = [
-            "<b>Заказ</b>",
-            f"ID: <code>{h(order['order_id'])}</code>",
-            f"Пользователь: <code>{h(order.get('user_id'))}</code> @{h(order.get('username') or '-')}",
-            f"Статус: <b>{h(status_label(order.get('status', '')))}</b>",
-            f"Сумма: <b>{money(order.get('total', order.get('price', 0)), payment_currency(data))}</b>",
-            f"Метод: <b>{h(order.get('payment_method', '-'))}</b>",
-            f"Промокод: <b>{h(order.get('promo_code') or '-')}</b>",
+            "*Заказ*",
+            f"ID: `{escape_markdown(order['order_id'])}`",
+            f"Пользователь: `{escape_markdown(order.get('user_id'))}` @{escape_markdown(order.get('username') or '-')}",
+            f"Статус: *{escape_markdown(status_label(order.get('status', '')))}*",
+            f"Сумма: *{escape_markdown(money(order.get('total', order.get('price', 0)), payment_currency(data)))}*",
+            f"Метод: *{escape_markdown(order.get('payment_method', '-'))}*",
+            f"Промокод: *{escape_markdown(order.get('promo_code') or '-')}*",
         ]
         if order.get("payment_method") == "manual":
-            lines.append(f"Скрин оплаты: <b>{h(payment_proof_label(order.get('payment_proof_status')))}</b>")
+            lines.append(f"Скрин оплаты: *{escape_markdown(payment_proof_label(order.get('payment_proof_status')))}*")
         if order.get("payment_proof_text"):
-            lines.extend(["", h(order.get("payment_proof_text", ""))])
+            lines.extend(["", escape_markdown(order.get("payment_proof_text", ""))])
         rows = []
         if order.get("payment_method") == "manual" and normalize_status(order.get("status", "")) == "awaiting_manual":
             if order.get("payment_proof_photo_id"):
@@ -2238,7 +2376,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             return
         if parts[1] == "confirm":
             if order.get("payment_method") == "manual" and normalize_status(order.get("status", "")) == "awaiting_manual" and not order.get("payment_proof_photo_id"):
-                await send_or_edit(update, "Сначала пользователь должен отправить скрин оплаты через кнопку «Я оплатил».", rows_with_home([[InlineKeyboardButton("К заказу", callback_data=f"admin:view_order:{order['order_id']}")]], True))
+                await send_or_edit(update, "Сначала пользователь должен отправить скрин оплаты через кнопку «Я оплатил»\\.", rows_with_home([[InlineKeyboardButton("К заказу", callback_data=f"admin:view_order:{order['order_id']}")]], True))
                 return
             complete_order(data, order, "paid")
             if order.get("payment_method") == "manual":
@@ -2248,8 +2386,8 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             try:
                 await context.bot.send_message(
                     chat_id=int(order["user_id"]),
-                    text=f"✅ <b>Оплата подтверждена</b>\n\nЗаказ <code>{h(order['order_id'])}</code>\n\n{order.get('delivery_text', '')}",
-                    parse_mode=ParseMode.HTML,
+                    text=f"✅ *Оплата подтверждена*\n\nЗаказ `{escape_markdown(order['order_id'])}`\n\n{order.get('delivery_text', '')}",
+                    parse_mode=ParseMode.MARKDOWN_V2,
                     reply_markup=rows_with_home(paid_order_buttons(order["order_id"]), False),
                 )
             except Exception:
@@ -2257,11 +2395,11 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if order.get("payment_method") == "manual":
                 await send_or_edit(
                     update,
-                    "Оплата аренды подтверждена.",
+                    "Оплата аренды подтверждена\\.",
                     rows_with_home([[InlineKeyboardButton("🧾 К оплатам аренды", callback_data="admin:manual_payments")]], True),
                 )
             else:
-                await send_or_edit(update, "Заказ подтверждён.", admin_panel_keyboard(user))
+                await send_or_edit(update, "Заказ подтверждён\\.", admin_panel_keyboard(user))
         elif parts[1] == "reject":
             order["status"] = "rejected"
             if order.get("payment_method") == "manual":
@@ -2271,8 +2409,8 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             try:
                 await context.bot.send_message(
                     chat_id=int(order["user_id"]),
-                    text=f"❌ <b>Оплата не подтверждена</b>\n\nЗаказ <code>{h(order['order_id'])}</code> отклонён. Создайте новый заказ или обратитесь в поддержку внутри бота.",
-                    parse_mode=ParseMode.HTML,
+                    text=f"❌ *Оплата не подтверждена*\n\nЗаказ `{escape_markdown(order['order_id'])}` отклонён\\. Создайте новый заказ или обратитесь в поддержку внутри бота\\.",
+                    parse_mode=ParseMode.MARKDOWN_V2,
                     reply_markup=rows_with_home([[InlineKeyboardButton("🛟 Поддержка", callback_data="menu:support")]], False),
                 )
             except Exception:
@@ -2280,24 +2418,24 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if order.get("payment_method") == "manual":
                 await send_or_edit(
                     update,
-                    "Оплата аренды отклонена.",
+                    "Оплата аренды отклонена\\.",
                     rows_with_home([[InlineKeyboardButton("🧾 К оплатам аренды", callback_data="admin:manual_payments")]], True),
                 )
             else:
-                await send_or_edit(update, "Заказ отклонён.", admin_panel_keyboard(user))
+                await send_or_edit(update, "Заказ отклонён\\.", admin_panel_keyboard(user))
         else:
             order["status"] = "refunded"
             audit(data, user["id"], "order_refunded_marked", order["order_id"])
             save_data(data)
-            await send_or_edit(update, "Локальная отметка возврата поставлена.", admin_panel_keyboard(user))
+            await send_or_edit(update, "Локальная отметка возврата поставлена\\.", admin_panel_keyboard(user))
         return
     if action == "admin:users":
-        await send_or_edit(update, "<b>Пользователи</b>", users_list_keyboard(data))
+        await send_or_edit(update, "*Пользователи*", users_list_keyboard(data))
         return
     if action == "admin:search_user":
         clear_state(context)
         context.user_data["state"] = {"name": "admin_search_user"}
-        await send_or_edit(update, "Введите username или ID пользователя.", rows_with_home([], True))
+        await send_or_edit(update, "Введите username или ID пользователя\\.", rows_with_home([], True))
         return
     if parts[:2] == ["admin", "user"]:
         await show_admin_user(update, data, parts[2])
@@ -2313,7 +2451,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if parts[:2] == ["admin", "toggle_admin"]:
         target_id = parts[2]
         if target_id == user["id"]:
-            await send_or_edit(update, "Нельзя снять админку с самого себя.", rows_with_home([], True))
+            await send_or_edit(update, "Нельзя снять админку с самого себя\\.", rows_with_home([], True))
             return
         if target_id in data["admins"]:
             data["admins"].remove(target_id)
@@ -2328,27 +2466,27 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         clear_state(context)
         context.user_data["state"] = {"name": f"admin_{parts[2]}_balance", "user_id": parts[3]}
         verb = "начисления" if parts[2] == "add" else "списания"
-        await send_or_edit(update, f"Введите сумму {verb}.", rows_with_home([], True))
+        await send_or_edit(update, f"Введите сумму {escape_markdown(verb)}\\.", rows_with_home([], True))
         return
     if parts[:2] == ["admin", "reply_user"]:
         clear_state(context)
         context.user_data["state"] = {"name": "admin_reply_user", "user_id": parts[2]}
-        await send_or_edit(update, "Введите сообщение пользователю.", rows_with_home([], True))
+        await send_or_edit(update, "Введите сообщение пользователю\\.", rows_with_home([], True))
         return
     if parts[:2] == ["admin", "note_user"]:
         clear_state(context)
         context.user_data["state"] = {"name": "admin_note_user", "user_id": parts[2]}
-        await send_or_edit(update, "Введите заметку о пользователе.", rows_with_home([], True))
+        await send_or_edit(update, "Введите заметку о пользователе\\.", rows_with_home([], True))
         return
     if action == "admin:catalog":
         rows = [[InlineKeyboardButton(category, callback_data=f"admin:category:{category}")] for category in data["catalog"]]
         rows.append([InlineKeyboardButton("Добавить категорию", callback_data="admin:add_category")])
-        await send_or_edit(update, "<b>Каталог</b>", rows_with_home(rows, True))
+        await send_or_edit(update, "*Каталог*", rows_with_home(rows, True))
         return
     if action == "admin:add_category":
         clear_state(context)
         context.user_data["state"] = {"name": "admin_add_category"}
-        await send_or_edit(update, "Введите название новой категории.", rows_with_home([], True))
+        await send_or_edit(update, "Введите название новой категории\\.", rows_with_home([], True))
         return
     if parts[:2] == ["admin", "category"]:
         category = parts[2]
@@ -2359,40 +2497,40 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         for item in data["catalog"].get(category, []):
             marker = "on" if item.get("active", True) else "off"
             rows.append([InlineKeyboardButton(f"{marker} {item['title']} | {money(item['price'], payment_currency(data))}", callback_data=f"admin:item:{category}:{item['id']}")])
-        await send_or_edit(update, f"<b>Категория: {h(category)}</b>", rows_with_home(rows, True, ("К каталогу", "admin:catalog")))
+        await send_or_edit(update, f"*Категория: {escape_markdown(category)}*", rows_with_home(rows, True, ("К каталогу", "admin:catalog")))
         return
     if parts[:2] == ["admin", "rename_category"]:
         clear_state(context)
         context.user_data["state"] = {"name": "admin_rename_category", "category": parts[2]}
-        await send_or_edit(update, "Введите новое название категории.", rows_with_home([], True))
+        await send_or_edit(update, "Введите новое название категории\\.", rows_with_home([], True))
         return
     if parts[:2] == ["admin", "delete_category"]:
         category = parts[2]
         data["catalog"].pop(category, None)
         audit(data, user["id"], "delete_category", category)
         save_data(data)
-        await send_or_edit(update, "Категория удалена.", admin_panel_keyboard(user))
+        await send_or_edit(update, "Категория удалена\\.", admin_panel_keyboard(user))
         return
     if parts[:2] == ["admin", "add_item"]:
         clear_state(context)
         context.user_data["state"] = {"name": "admin_add_item", "category": parts[2]}
-        await send_or_edit(update, "Введите товар в формате:\nНазвание|Цена|Описание", rows_with_home([], True))
+        await send_or_edit(update, "Введите товар в формате:\nНазвание\\|Цена\\|Описание", rows_with_home([], True))
         return
     if parts[:2] == ["admin", "item"]:
         category, item_id = parts[2], parts[3]
         item = get_item(data, category, item_id)
         if not item:
-            await send_or_edit(update, "Товар не найден.", admin_panel_keyboard(user))
+            await send_or_edit(update, "Товар не найден\\.", admin_panel_keyboard(user))
             return
         text = (
-            "<b>Редактирование товара</b>\n\n"
-            f"ID: <code>{h(item['id'])}</code>\n"
-            f"Название: <b>{h(item['title'])}</b>\n"
-            f"Цена: <b>{money(item['price'], payment_currency(data))}</b>\n"
-            f"Остаток: <b>{h(item.get('stock', -1))}</b>\n"
-            f"Активен: <b>{'да' if item.get('active', True) else 'нет'}</b>\n"
-            f"Продано: <b>{int(item.get('sold_count', 0))}</b>\n\n"
-            f"{h(item.get('description', ''))}"
+            "*Редактирование товара*\n\n"
+            f"ID: `{escape_markdown(item['id'])}`\n"
+            f"Название: *{escape_markdown(item['title'])}*\n"
+            f"Цена: *{escape_markdown(money(item['price'], payment_currency(data)))}*\n"
+            f"Остаток: *{escape_markdown(str(item.get('stock', -1)))}*\n"
+            f"Активен: *{'да' if item.get('active', True) else 'нет'}*\n"
+            f"Продано: *{int(item.get('sold_count', 0))}*\n\n"
+            f"{escape_markdown(item.get('description', ''))}"
         )
         rows = [
             [InlineKeyboardButton("Название", callback_data=f"admin:item_edit:title:{category}:{item_id}"), InlineKeyboardButton("Описание", callback_data=f"admin:item_edit:description:{category}:{item_id}")],
@@ -2408,14 +2546,14 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         clear_state(context)
         context.user_data["state"] = {"name": "admin_item_edit", "field": field, "category": category, "item_id": item_id}
         prompts = {
-            "title": "Введите новое название.",
-            "description": "Введите новое описание.",
-            "price": "Введите новую цену числом.",
-            "stock": "Введите остаток числом. -1 значит без ограничений.",
-            "photo": "Отправьте фото товара.",
-            "delivery_text": "Введите текст выдачи после оплаты.",
+            "title": "Введите новое название\\.",
+            "description": "Введите новое описание\\.",
+            "price": "Введите новую цену числом\\.",
+            "stock": "Введите остаток числом\\. \\-1 значит без ограничений\\.",
+            "photo": "Отправьте фото товара\\.",
+            "delivery_text": "Введите текст выдачи после оплаты\\.",
         }
-        await send_or_edit(update, prompts.get(field, "Введите новое значение."), rows_with_home([], True))
+        await send_or_edit(update, prompts.get(field, "Введите новое значение\\."), rows_with_home([], True))
         return
     if parts[:2] == ["admin", "item_toggle"]:
         item = get_item(data, parts[2], parts[3])
@@ -2424,7 +2562,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             item["updated_at"] = now_iso()
             audit(data, user["id"], "toggle_item", item["id"])
             save_data(data)
-        await send_or_edit(update, "Статус товара обновлён.", rows_with_home([[InlineKeyboardButton("К товару", callback_data=f"admin:item:{parts[2]}:{parts[3]}")]], True))
+        await send_or_edit(update, "Статус товара обновлён\\.", rows_with_home([[InlineKeyboardButton("К товару", callback_data=f"admin:item:{parts[2]}:{parts[3]}")]], True))
         return
     if parts[:2] == ["admin", "item_duplicate"]:
         category, item_id = parts[2], parts[3]
@@ -2438,28 +2576,28 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             data["catalog"][category].append(copy_item)
             audit(data, user["id"], "duplicate_item", item_id)
             save_data(data)
-        await send_or_edit(update, "Товар продублирован.", rows_with_home([[InlineKeyboardButton("К категории", callback_data=f"admin:category:{category}")]], True))
+        await send_or_edit(update, "Товар продублирован\\.", rows_with_home([[InlineKeyboardButton("К категории", callback_data=f"admin:category:{category}")]], True))
         return
     if parts[:2] == ["admin", "item_delete"]:
         category, item_id = parts[2], parts[3]
         data["catalog"][category] = [item for item in data["catalog"].get(category, []) if item["id"] != item_id]
         audit(data, user["id"], "delete_item", item_id)
         save_data(data)
-        await send_or_edit(update, "Товар удалён.", rows_with_home([[InlineKeyboardButton("К категории", callback_data=f"admin:category:{category}")]], True))
+        await send_or_edit(update, "Товар удалён\\.", rows_with_home([[InlineKeyboardButton("К категории", callback_data=f"admin:category:{category}")]], True))
         return
     if action == "admin:payments":
         settings = data["settings"]
         text = (
-            "<b>Платежи</b>\n\n"
-            f"Crypto Bot: <b>{'готов' if crypto_pay_ready(data) else 'не настроен'}</b>\n"
-            f"Crypto API: <code>{h(crypto_pay_api_url(data))}</code>\n"
-            f"Crypto валюта: <b>{h(crypto_pay_display_currency(data))}</b>\n"
-            f"Crypto token: <b>{'задан' if crypto_pay_token(data) else 'не задан'}</b>\n\n"
-            f"Ручная оплата: <b>{'вкл' if settings.get('manual_payments_enabled') else 'выкл'}</b>\n"
-            f"Баланс: <b>{'вкл' if settings.get('balance_enabled') else 'выкл'}</b>\n"
-            f"Валюта баланса: <b>{h(payment_currency(data))}</b>\n"
-            f"Реквизиты аренды: <b>{h(manual_payment_requisites(data))}</b>\n\n"
-            f"<b>Реквизиты пополнения</b>\n{h(settings.get('topup_requisites') or '')}"
+            "*Платежи*\n\n"
+            f"Crypto Bot: *{'готов' if crypto_pay_ready(data) else 'не настроен'}*\n"
+            f"Crypto API: `{escape_markdown(crypto_pay_api_url(data))}`\n"
+            f"Crypto валюта: *{escape_markdown(crypto_pay_display_currency(data))}*\n"
+            f"Crypto token: *{'задан' if crypto_pay_token(data) else 'не задан'}*\n\n"
+            f"Ручная оплата: *{'вкл' if settings.get('manual_payments_enabled') else 'выкл'}*\n"
+            f"Баланс: *{'вкл' if settings.get('balance_enabled') else 'выкл'}*\n"
+            f"Валюта баланса: *{escape_markdown(payment_currency(data))}*\n"
+            f"Реквизиты аренды: *{escape_markdown(manual_payment_requisites(data))}*\n\n"
+            f"*Реквизиты пополнения*\n{escape_markdown(settings.get('topup_requisites') or '')}"
         )
         rows = [
             [InlineKeyboardButton("Crypto Bot вкл/выкл", callback_data="admin:toggle_setting:crypto_pay_enabled"), InlineKeyboardButton("Crypto token", callback_data="admin:set_crypto_token")],
@@ -2476,16 +2614,16 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if action == "admin:crypto_test":
         try:
             app_info = await crypto_pay_request(data, "getMe")
-            await send_or_edit(update, f"Crypto Bot подключен.\n\n<code>{h(app_info)}</code>", rows_with_home([], True, ("К оплате", "admin:payments")))
+            await send_or_edit(update, f"Crypto Bot подключен\\.\n\n`{escape_markdown(str(app_info))}`", rows_with_home([], True, ("К оплате", "admin:payments")))
         except Exception as exc:
-            await send_or_edit(update, f"Crypto Bot не отвечает: {h(exc)}", rows_with_home([], True, ("К оплате", "admin:payments")))
+            await send_or_edit(update, f"Crypto Bot не отвечает: {escape_markdown(str(exc))}", rows_with_home([], True, ("К оплате", "admin:payments")))
         return
     if action == "admin:payment_log":
         payments = list(data.get("payments", {}).values())
         payments.sort(key=lambda item: item.get("created_at", ""), reverse=True)
-        text = "<b>Журнал платежей</b>\n\n" + (
-            "\n".join(f"• {h(p['payment_id'])} | {h(p.get('provider', 'manual'))} | {h(p.get('kind'))} | {h(p.get('status'))} | {money(p.get('amount', 0), p.get('currency', payment_currency(data)))}" for p in payments[:25])
-            or "Платежей пока нет."
+        text = "*Журнал платежей*\n\n" + (
+            "\n".join(f"• {escape_markdown(p['payment_id'])} \\| {escape_markdown(p.get('provider', 'manual'))} \\| {escape_markdown(str(p.get('kind')))} \\| {escape_markdown(str(p.get('status')))} \\| {escape_markdown(money(p.get('amount', 0), p.get('currency', payment_currency(data))))}" for p in payments[:25])
+            or "Платежей пока нет\\."
         )
         await send_or_edit(update, text, rows_with_home([], True))
         return
@@ -2495,18 +2633,18 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             data["settings"][key] = not data["settings"][key]
             audit(data, user["id"], "toggle_setting", key)
             save_data(data)
-        await send_or_edit(update, "Настройка переключена.", rows_with_home([[InlineKeyboardButton("К платежам", callback_data="admin:payments"), InlineKeyboardButton("К настройкам", callback_data="admin:settings")]], True))
+        await send_or_edit(update, "Настройка переключена\\.", rows_with_home([[InlineKeyboardButton("К платежам", callback_data="admin:payments"), InlineKeyboardButton("К настройкам", callback_data="admin:settings")]], True))
         return
     if action in {"admin:set_currency", "admin:set_payment_contact", "admin:set_payment_channel", "admin:set_crypto_token", "admin:set_crypto_api_url", "admin:set_crypto_currency", "admin:set_topup_requisites", "admin:set_manual_requisites"}:
         prompts = {
-            "admin:set_currency": ("admin_set_currency", "Введите валюту баланса, например RUB."),
-            "admin:set_payment_contact": ("admin_set_payment_contact", "Введите username для ручной оплаты, например @unison_off."),
-            "admin:set_payment_channel": ("admin_set_payment_channel", "Введите ссылку на канал/реквизиты."),
-            "admin:set_crypto_token": ("admin_set_crypto_token", "Введите Crypto Pay API token из @CryptoBot → Crypto Pay → Create App."),
-            "admin:set_crypto_api_url": ("admin_set_crypto_api_url", "Введите API URL: https://pay.crypt.bot или https://testnet-pay.crypt.bot"),
-            "admin:set_crypto_currency": ("admin_set_crypto_currency", "Введите RUB для fiat-счёта или crypto:USDT / crypto:TON для счёта в криптовалюте."),
-            "admin:set_topup_requisites": ("admin_set_topup_requisites", "Введите реквизиты для пополнения баланса. Пользователь увидит этот текст после ввода суммы."),
-            "admin:set_manual_requisites": ("admin_set_manual_requisites", "Введите реквизиты для ручной оплаты аренды. Пользователь увидит их перед кнопкой «Я оплатил»."),
+            "admin:set_currency": ("admin_set_currency", "Введите валюту баланса, например RUB\\."),
+            "admin:set_payment_contact": ("admin_set_payment_contact", "Введите username для ручной оплаты, например @unison\\_off\\."),
+            "admin:set_payment_channel": ("admin_set_payment_channel", "Введите ссылку на канал/реквизиты\\."),
+            "admin:set_crypto_token": ("admin_set_crypto_token", "Введите Crypto Pay API token из @CryptoBot → Crypto Pay → Create App\\."),
+            "admin:set_crypto_api_url": ("admin_set_crypto_api_url", "Введите API URL: https://pay\\.crypt\\.bot или https://testnet\\-pay\\.crypt\\.bot"),
+            "admin:set_crypto_currency": ("admin_set_crypto_currency", "Введите RUB для fiat\\-счёта или crypto:USDT / crypto:TON для счёта в криптовалюте\\."),
+            "admin:set_topup_requisites": ("admin_set_topup_requisites", "Введите реквизиты для пополнения баланса\\. Пользователь увидит этот текст после ввода суммы\\."),
+            "admin:set_manual_requisites": ("admin_set_manual_requisites", "Введите реквизиты для ручной оплаты аренды\\. Пользователь увидит их перед кнопкой «Я оплатил»\\."),
         }
         state_name, prompt = prompts[action]
         clear_state(context)
@@ -2516,26 +2654,26 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if action == "admin:promos":
         rows = [[InlineKeyboardButton(f"{code} | {promo.get('amount')}{'%' if promo.get('type') == 'percent' else ''}", callback_data=f"admin:promo:{code}")] for code, promo in data.get("promo_codes", {}).items()]
         rows.append([InlineKeyboardButton("Создать промокод", callback_data="admin:create_promo")])
-        await send_or_edit(update, "<b>Промокоды</b>", rows_with_home(rows, True))
+        await send_or_edit(update, "*Промокоды*", rows_with_home(rows, True))
         return
     if action == "admin:create_promo":
         clear_state(context)
         context.user_data["state"] = {"name": "admin_create_promo"}
-        await send_or_edit(update, "Введите: CODE|percent|10|100 или CODE|fixed|50|20", rows_with_home([], True))
+        await send_or_edit(update, "Введите: CODE\\|percent\\|10\\|100 или CODE\\|fixed\\|50\\|20", rows_with_home([], True))
         return
     if parts[:2] == ["admin", "promo"]:
         code = parts[2]
         promo = data.get("promo_codes", {}).get(code)
         if not promo:
-            await send_or_edit(update, "Промокод не найден.", rows_with_home([], True))
+            await send_or_edit(update, "Промокод не найден\\.", rows_with_home([], True))
             return
         text = (
-            "<b>Промокод</b>\n\n"
-            f"Код: <code>{h(code)}</code>\n"
-            f"Тип: <b>{h(promo.get('type'))}</b>\n"
-            f"Размер: <b>{h(promo.get('amount'))}</b>\n"
-            f"Активен: <b>{'да' if promo.get('active', True) else 'нет'}</b>\n"
-            f"Использований: <b>{promo.get('uses', 0)}/{promo.get('max_uses', 0)}</b>"
+            "*Промокод*\n\n"
+            f"Код: `{escape_markdown(code)}`\n"
+            f"Тип: *{escape_markdown(str(promo.get('type')))}*\n"
+            f"Размер: *{escape_markdown(str(promo.get('amount')))}*\n"
+            f"Активен: *{'да' if promo.get('active', True) else 'нет'}*\n"
+            f"Использований: *{promo.get('uses', 0)}/{promo.get('max_uses', 0)}*"
         )
         rows = [
             [InlineKeyboardButton("Вкл/выкл", callback_data=f"admin:promo_toggle:{code}")],
@@ -2549,18 +2687,18 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             promo["active"] = not promo.get("active", True)
             audit(data, user["id"], "toggle_promo", parts[2])
             save_data(data)
-        await send_or_edit(update, "Промокод обновлён.", rows_with_home([[InlineKeyboardButton("К промокоду", callback_data=f"admin:promo:{parts[2]}")]], True))
+        await send_or_edit(update, "Промокод обновлён\\.", rows_with_home([[InlineKeyboardButton("К промокоду", callback_data=f"admin:promo:{parts[2]}")]], True))
         return
     if parts[:2] == ["admin", "promo_delete"]:
         data.get("promo_codes", {}).pop(parts[2], None)
         audit(data, user["id"], "delete_promo", parts[2])
         save_data(data)
-        await send_or_edit(update, "Промокод удалён.", rows_with_home([[InlineKeyboardButton("К промокодам", callback_data="admin:promos")]], True))
+        await send_or_edit(update, "Промокод удалён\\.", rows_with_home([[InlineKeyboardButton("К промокодам", callback_data="admin:promos")]], True))
         return
     if action == "admin:marketing":
         text = (
-            "<b>Рассылки</b>\n\n"
-            "Здесь можно отправить сообщение всем пользователям или только тем, кто не отключил рассылки."
+            "*Рассылки*\n\n"
+            "Здесь можно отправить сообщение всем пользователям или только тем, кто не отключил рассылки\\."
         )
         rows = [
             [InlineKeyboardButton("Рассылка всем", callback_data="admin:broadcast:all"), InlineKeyboardButton("Подписчикам", callback_data="admin:broadcast:subscribed")],
@@ -2569,11 +2707,11 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
     if action == "admin:referrals":
         text = (
-            "<b>Реферальная система</b>\n\n"
-            f"Статус: <b>{'включена' if data['settings'].get('referral_enabled', True) else 'выключена'}</b>\n"
-            f"Бонус рефереру: <b>{money(data['settings'].get('referral_bonus', 0), payment_currency(data))}</b>\n"
-            f"Кэшбек покупателю: <b>{data['settings'].get('cashback_percent', 0)}%</b>\n\n"
-            "Пользователь видит свой код в профиле. Формат запуска: <code>/start ref_CODE</code>."
+            "*Реферальная система*\n\n"
+            f"Статус: *{'включена' if data['settings'].get('referral_enabled', True) else 'выключена'}*\n"
+            f"Бонус рефереру: *{escape_markdown(money(data['settings'].get('referral_bonus', 0), payment_currency(data)))}*\n"
+            f"Кэшбек покупателю: *{data['settings'].get('cashback_percent', 0)}%*\n\n"
+            "Пользователь видит свой код в профиле\\. Формат запуска: `/start ref_CODE`\\."
         )
         rows = [
             [InlineKeyboardButton("Рефералка вкл/выкл", callback_data="admin:toggle_setting:referral_enabled")],
@@ -2584,12 +2722,12 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if parts[:2] == ["admin", "broadcast"]:
         clear_state(context)
         context.user_data["state"] = {"name": "admin_broadcast", "target": parts[2]}
-        await send_or_edit(update, "Введите текст рассылки.", rows_with_home([], True))
+        await send_or_edit(update, "Введите текст рассылки\\.", rows_with_home([], True))
         return
     if action in {"admin:set_cashback", "admin:set_ref_bonus"}:
         clear_state(context)
         context.user_data["state"] = {"name": "admin_set_cashback" if action.endswith("cashback") else "admin_set_ref_bonus"}
-        await send_or_edit(update, "Введите число.", rows_with_home([], True))
+        await send_or_edit(update, "Введите число\\.", rows_with_home([], True))
         return
     if action == "admin:rentals":
         rentals = [rental for rental in data.get("rental_requests", {}).values() if rental.get("status") != "awaiting_activation"]
@@ -2598,22 +2736,22 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             [InlineKeyboardButton(f"{r['request_id']} | {r.get('status', 'new')} | {r.get('scooter_code') or 'QR'}", callback_data=f"admin:rental:{r['request_id']}")]
             for r in rentals[:30]
         ]
-        await send_or_edit(update, "<b>🛴 Заявки на аренду</b>", rows_with_home(rows, True, ("🛠 К админке", "admin:panel")))
+        await send_or_edit(update, "*🛴 Заявки на аренду*", rows_with_home(rows, True, ("🛠 К админке", "admin:panel")))
         return
     if parts[:2] == ["admin", "rental"]:
         rental = data.get("rental_requests", {}).get(parts[2])
         if not rental:
-            await send_or_edit(update, "Заявка не найдена.", rows_with_home([], True, ("🛴 К арендам", "admin:rentals")))
+            await send_or_edit(update, "Заявка не найдена\\.", rows_with_home([], True, ("🛴 К арендам", "admin:rentals")))
             return
         text = (
-            "<b>🛴 Заявка на аренду</b>\n\n"
-            f"ID: <code>{h(rental['request_id'])}</code>\n"
-            f"Заказ: <code>{h(rental.get('order_id'))}</code>\n"
-            f"Пользователь: <code>{h(rental.get('user_id'))}</code> @{h(rental.get('username') or '-')}\n"
-            f"Статус: <b>{h(rental.get('status', 'new'))}</b>\n"
-            f"Модель: <b>{h(rental.get('scooter_model') or SCOOTER_MODEL)}</b>\n"
-            f"Заряд: <b>{h(rental.get('battery_percent', '-'))}%</b>\n"
-            f"Самокат/QR: <b>{h(rental.get('scooter_code') or 'QR-фото')}</b>"
+            "*🛴 Заявка на аренду*\n\n"
+            f"ID: `{escape_markdown(rental['request_id'])}`\n"
+            f"Заказ: `{escape_markdown(rental.get('order_id'))}`\n"
+            f"Пользователь: `{escape_markdown(rental.get('user_id'))}` @{escape_markdown(rental.get('username') or '-')}\n"
+            f"Статус: *{escape_markdown(rental.get('status', 'new'))}*\n"
+            f"Модель: *{escape_markdown(rental.get('scooter_model') or SCOOTER_MODEL)}*\n"
+            f"Заряд: *{escape_markdown(str(rental.get('battery_percent', '-')))}%*\n"
+            f"Самокат/QR: *{escape_markdown(rental.get('scooter_code') or 'QR-фото')}*"
         )
         rows = [
             [
@@ -2626,7 +2764,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if parts[:2] in (["admin", "rental_ok"], ["admin", "rental_fail"]):
         rental = data.get("rental_requests", {}).get(parts[2])
         if not rental:
-            await send_or_edit(update, "Заявка не найдена.", rows_with_home([], True, ("🛴 К арендам", "admin:rentals")))
+            await send_or_edit(update, "Заявка не найдена\\.", rows_with_home([], True, ("🛴 К арендам", "admin:rentals")))
             return
         ok = parts[1] == "rental_ok"
         rental["status"] = "ready" if ok else "failed"
@@ -2638,24 +2776,24 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if ok:
                 await context.bot.send_message(
                     chat_id=int(rental["user_id"]),
-                    text="✅ <b>Самокат готов к аренде</b>\n\n🛴 Приятной поездки!",
-                    parse_mode=ParseMode.HTML,
+                    text="✅ *Самокат готов к аренде*\n\n🛴 Приятной поездки\\!",
+                    parse_mode=ParseMode.MARKDOWN_V2,
                 )
             else:
                 await context.bot.send_message(
                     chat_id=int(rental["user_id"]),
-                    text="🚫 <b>Невозможно арендовать самокат</b>\n\nПопробуйте другой номер или QR позже.",
-                    parse_mode=ParseMode.HTML,
+                    text="🚫 *Невозможно арендовать самокат*\n\nПопробуйте другой номер или QR позже\\.",
+                    parse_mode=ParseMode.MARKDOWN_V2,
                 )
         except Exception:
             pass
-        await send_or_edit(update, "Статус заявки обновлён.", rows_with_home([[InlineKeyboardButton("🛴 К арендам", callback_data="admin:rentals")]], True))
+        await send_or_edit(update, "Статус заявки обновлён\\.", rows_with_home([[InlineKeyboardButton("🛴 К арендам", callback_data="admin:rentals")]], True))
         return
     if action == "admin:appearance":
         text = (
-            "<b>Внешний вид</b>\n\n"
-            f"Название: <b>{h(data['settings'].get('shop_title'))}</b>\n"
-            "Можно менять название магазина, главный текст/фото и подписи кнопок главного меню."
+            "*Внешний вид*\n\n"
+            f"Название: *{escape_markdown(data['settings'].get('shop_title'))}*\n"
+            "Можно менять название магазина, главный текст/фото и подписи кнопок главного меню\\."
         )
         rows = [
             [InlineKeyboardButton("Название", callback_data="admin:edit_shop_title"), InlineKeyboardButton("Главный текст", callback_data="admin:edit_main_text")],
@@ -2669,16 +2807,16 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             [InlineKeyboardButton(f"{key}: {data['settings']['buttons'].get(key, value)}", callback_data=f"admin:button_edit:{key}")]
             for key, value in BUTTON_DEFAULTS.items()
         ]
-        await send_or_edit(update, "<b>Кнопки главного меню</b>\n\nВыберите кнопку, чтобы изменить подпись.", rows_with_home(rows, True, ("К внешнему виду", "admin:appearance")))
+        await send_or_edit(update, "*Кнопки главного меню*\n\nВыберите кнопку, чтобы изменить подпись\\.", rows_with_home(rows, True, ("К внешнему виду", "admin:appearance")))
         return
     if parts[:2] == ["admin", "button_edit"]:
         key = parts[2]
         if key not in BUTTON_DEFAULTS:
-            await send_or_edit(update, "Кнопка не найдена.", rows_with_home([], True, ("К кнопкам", "admin:buttons")))
+            await send_or_edit(update, "Кнопка не найдена\\.", rows_with_home([], True, ("К кнопкам", "admin:buttons")))
             return
         clear_state(context)
         context.user_data["state"] = {"name": "admin_edit_button", "key": key}
-        await send_or_edit(update, f"Введите новую подпись для кнопки {h(key)}.", rows_with_home([], True, ("К кнопкам", "admin:buttons")))
+        await send_or_edit(update, f"Введите новую подпись для кнопки {escape_markdown(key)}\\.", rows_with_home([], True, ("К кнопкам", "admin:buttons")))
         return
     if action == "admin:tickets":
         tickets = [ticket for ticket in data["tickets"].values() if ticket.get("type", "support") == "support"]
@@ -2692,7 +2830,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             ]
             for ticket in tickets[:30]
         ]
-        text = "<b>🛟 Поддержка</b>\n\n🔔 новое сообщение · 🟢 открыт · 🔒 закрыт"
+        text = "*🛟 Поддержка*\n\n🔔 новое сообщение · 🟢 открыт · 🔒 закрыт"
         await send_or_edit(update, text, rows_with_home(rows, True))
         return
     if action == "admin:topups":
@@ -2707,26 +2845,26 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             ]
             for ticket in tickets[:30]
         ]
-        text = "<b>💳 Пополнения баланса</b>\n\n🆕 новый чек · 🔒 закрыт"
+        text = "*💳 Пополнения баланса*\n\n🆕 новый чек · 🔒 закрыт"
         await send_or_edit(update, text, rows_with_home(rows, True))
         return
     if parts[:2] == ["admin", "ticket"]:
         ticket = data["tickets"].get(parts[2])
         if not ticket:
-            await send_or_edit(update, "Тикет не найден.", rows_with_home([], True))
+            await send_or_edit(update, "Тикет не найден\\.", rows_with_home([], True))
             return
         ticket_type = ticket.get("type", "support")
         back = ("💳 К пополнениям", "admin:topups") if ticket_type == "topup" else ("🛟 К поддержке", "admin:tickets")
         rows = []
         if ticket_type == "topup":
             text = (
-                "<b>💳 Пополнение баланса</b>\n\n"
-                f"ID: <code>{h(ticket['ticket_id'])}</code>\n"
-                f"Пользователь: <code>{h(ticket['user_id'])}</code> @{h(ticket.get('username') or '-')}\n"
-                f"Статус: <b>{ticket_status_emoji(ticket.get('status', 'new'))} {h(ticket.get('status', 'new'))}</b>\n"
-                f"Сумма: <b>{money(ticket.get('amount', 0), payment_currency(data))}</b>\n"
-                f"Чек: <b>{'фото' if ticket.get('receipt_photo_id') else 'текст'}</b>\n\n"
-                f"{h(ticket.get('receipt_text') or ticket.get('text', ''))}"
+                "*💳 Пополнение баланса*\n\n"
+                f"ID: `{escape_markdown(ticket['ticket_id'])}`\n"
+                f"Пользователь: `{escape_markdown(ticket['user_id'])}` @{escape_markdown(ticket.get('username') or '-')}\n"
+                f"Статус: *{ticket_status_emoji(ticket.get('status', 'new'))} {escape_markdown(ticket.get('status', 'new'))}*\n"
+                f"Сумма: *{escape_markdown(money(ticket.get('amount', 0), payment_currency(data)))}*\n"
+                f"Чек: *{'фото' if ticket.get('receipt_photo_id') else 'текст'}*\n\n"
+                f"{escape_markdown(ticket.get('receipt_text') or ticket.get('text', ''))}"
             )
         else:
             if ticket.get("status") == "new_message":
@@ -2736,13 +2874,13 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             history = []
             for message in messages[-8:]:
                 icon = "🛠" if message.get("role") == "admin" else "👤"
-                history.append(f"{icon} {h(message.get('text', ''))}")
+                history.append(f"{icon} {escape_markdown(message.get('text', ''))}")
             text = (
-                "<b>🛟 Тикет поддержки</b>\n\n"
-                f"ID: <code>{h(ticket['ticket_id'])}</code>\n"
-                f"Пользователь: <code>{h(ticket['user_id'])}</code> @{h(ticket.get('username') or '-')}\n"
-                f"Статус: <b>{ticket_status_emoji(ticket.get('status', 'open'))} {h(ticket.get('status', 'open'))}</b>\n\n"
-                + ("\n\n".join(history) or h(ticket.get("text", "")))
+                "*🛟 Тикет поддержки*\n\n"
+                f"ID: `{escape_markdown(ticket['ticket_id'])}`\n"
+                f"Пользователь: `{escape_markdown(ticket['user_id'])}` @{escape_markdown(ticket.get('username') or '-')}\n"
+                f"Статус: *{ticket_status_emoji(ticket.get('status', 'open'))} {escape_markdown(ticket.get('status', 'open'))}*\n\n"
+                + ("\n\n".join(history) or escape_markdown(ticket.get("text", "")))
             )
             rows.append([InlineKeyboardButton("🛟 Ответить в тикет", callback_data=f"admin:ticket_reply:{ticket['ticket_id']}")])
         if ticket_type == "topup" and ticket.get("status") != "closed":
@@ -2763,16 +2901,16 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if parts[:2] == ["admin", "ticket_reply"]:
         ticket = data["tickets"].get(parts[2])
         if not ticket or ticket.get("type", "support") != "support":
-            await send_or_edit(update, "Тикет поддержки не найден.", rows_with_home([], True, ("🛟 К поддержке", "admin:tickets")))
+            await send_or_edit(update, "Тикет поддержки не найден\\.", rows_with_home([], True, ("🛟 К поддержке", "admin:tickets")))
             return
         clear_state(context)
         context.user_data["state"] = {"name": "admin_ticket_reply", "ticket_id": ticket["ticket_id"]}
-        await send_or_edit(update, "Введите ответ пользователю. Сообщение придёт ему внутри бота.", rows_with_home([], True, ("🛟 К тикету", f"admin:ticket:{ticket['ticket_id']}")))
+        await send_or_edit(update, "Введите ответ пользователю\\. Сообщение придёт ему внутри бота\\.", rows_with_home([], True, ("🛟 К тикету", f"admin:ticket:{ticket['ticket_id']}")))
         return
     if parts[:2] in (["admin", "topup_approve"], ["admin", "topup_reject"]):
         ticket = data["tickets"].get(parts[2])
         if not ticket or ticket.get("type") != "topup":
-            await send_or_edit(update, "Заявка пополнения не найдена.", rows_with_home([], True, ("💳 К пополнениям", "admin:topups")))
+            await send_or_edit(update, "Заявка пополнения не найдена\\.", rows_with_home([], True, ("💳 К пополнениям", "admin:topups")))
             return
         approve = parts[1] == "topup_approve"
         target = data["users"].get(str(ticket["user_id"]))
@@ -2784,20 +2922,20 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             audit(data, user["id"], "topup_approved", f"{ticket['ticket_id']} | {amount}")
             save_data(data)
             try:
-                await context.bot.send_message(chat_id=int(ticket["user_id"]), text=f"💳 <b>Баланс пополнен</b>\n\nНачислено: <b>{amount} ₽</b>", parse_mode=ParseMode.HTML)
+                await context.bot.send_message(chat_id=int(ticket["user_id"]), text=f"💳 *Баланс пополнен*\n\nНачислено: *{escape_markdown(str(amount))} ₽*", parse_mode=ParseMode.MARKDOWN_V2)
             except Exception:
                 pass
-            await send_or_edit(update, "Баланс начислен.", rows_with_home([[InlineKeyboardButton("💳 К пополнениям", callback_data="admin:topups")]], True))
+            await send_or_edit(update, "Баланс начислен\\.", rows_with_home([[InlineKeyboardButton("💳 К пополнениям", callback_data="admin:topups")]], True))
             return
         ticket["status"] = "closed"
         ticket["resolved_at"] = now_iso()
         audit(data, user["id"], "topup_rejected", ticket["ticket_id"])
         save_data(data)
         try:
-            await context.bot.send_message(chat_id=int(ticket["user_id"]), text="💳 <b>Пополнение не выполнено</b>\n\nПопробуйте позже или обратитесь в поддержку.", parse_mode=ParseMode.HTML)
+            await context.bot.send_message(chat_id=int(ticket["user_id"]), text="💳 *Пополнение не выполнено*\n\nПопробуйте позже или обратитесь в поддержку\\.", parse_mode=ParseMode.MARKDOWN_V2)
         except Exception:
             pass
-        await send_or_edit(update, "Заявка отклонена.", rows_with_home([[InlineKeyboardButton("💳 К пополнениям", callback_data="admin:topups")]], True))
+        await send_or_edit(update, "Заявка отклонена\\.", rows_with_home([[InlineKeyboardButton("💳 К пополнениям", callback_data="admin:topups")]], True))
         return
     if parts[:2] == ["admin", "ticket_close"]:
         ticket = data["tickets"].get(parts[2])
@@ -2807,20 +2945,20 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             back_callback = "admin:topups" if ticket.get("type") == "topup" else "admin:tickets"
             audit(data, user["id"], "close_ticket", parts[2])
             save_data(data)
-        await send_or_edit(update, "Тикет закрыт.", rows_with_home([[InlineKeyboardButton("Назад", callback_data=back_callback)]], True))
+        await send_or_edit(update, "Тикет закрыт\\.", rows_with_home([[InlineKeyboardButton("Назад", callback_data=back_callback)]], True))
         return
     if action == "admin:reviews":
         reviews = list(data["reviews"].values())
         reviews.sort(key=lambda item: item.get("created_at", ""), reverse=True)
         rows = [[InlineKeyboardButton(f"{review.get('status', 'approved')} | {review.get('item_title', '-')[:25]}", callback_data=f"admin:review:{review['id']}")] for review in reviews[:30]]
-        await send_or_edit(update, "<b>Отзывы</b>", rows_with_home(rows, True))
+        await send_or_edit(update, "*Отзывы*", rows_with_home(rows, True))
         return
     if parts[:2] == ["admin", "review"]:
         review = data["reviews"].get(parts[2])
         if not review:
-            await send_or_edit(update, "Отзыв не найден.", rows_with_home([], True))
+            await send_or_edit(update, "Отзыв не найден\\.", rows_with_home([], True))
             return
-        text = f"<b>Отзыв</b>\n\n{h(review.get('text', ''))}\n\nСтатус: <b>{h(review.get('status', 'approved'))}</b>"
+        text = f"*Отзыв*\n\n{escape_markdown(review.get('text', ''))}\n\nСтатус: *{escape_markdown(review.get('status', 'approved'))}*"
         rows = [
             [InlineKeyboardButton("Одобрить", callback_data=f"admin:review_approve:{review['id']}"), InlineKeyboardButton("Удалить", callback_data=f"admin:review_delete:{review['id']}")],
         ]
@@ -2830,12 +2968,12 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if parts[2] in data["reviews"]:
             data["reviews"][parts[2]]["status"] = "approved"
             save_data(data)
-        await send_or_edit(update, "Отзыв одобрен.", rows_with_home([[InlineKeyboardButton("К отзывам", callback_data="admin:reviews")]], True))
+        await send_or_edit(update, "Отзыв одобрен\\.", rows_with_home([[InlineKeyboardButton("К отзывам", callback_data="admin:reviews")]], True))
         return
     if parts[:2] == ["admin", "review_delete"]:
         data["reviews"].pop(parts[2], None)
         save_data(data)
-        await send_or_edit(update, "Отзыв удалён.", rows_with_home([[InlineKeyboardButton("К отзывам", callback_data="admin:reviews")]], True))
+        await send_or_edit(update, "Отзыв удалён\\.", rows_with_home([[InlineKeyboardButton("К отзывам", callback_data="admin:reviews")]], True))
         return
     if action == "admin:content":
         rows = [
@@ -2843,15 +2981,15 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             [InlineKeyboardButton("FAQ", callback_data="admin:edit_faq"), InlineKeyboardButton("Соглашение", callback_data="admin:edit_agreement")],
             [InlineKeyboardButton("Название магазина", callback_data="admin:edit_shop_title")],
         ]
-        await send_or_edit(update, "<b>Контент</b>", rows_with_home(rows, True))
+        await send_or_edit(update, "*Контент*", rows_with_home(rows, True))
         return
     if action in {"admin:edit_main_text", "admin:edit_main_photo", "admin:edit_faq", "admin:edit_agreement", "admin:edit_shop_title"}:
         state_map = {
-            "admin:edit_main_text": ("admin_edit_setting", "main_screen_text", "Введите новый главный текст."),
-            "admin:edit_main_photo": ("admin_edit_photo", "main_screen_photo", "Отправьте новое главное фото."),
-            "admin:edit_faq": ("admin_edit_setting", "faq", "Введите новый FAQ."),
-            "admin:edit_agreement": ("admin_edit_agreement", "agreement", "Введите новый текст соглашения."),
-            "admin:edit_shop_title": ("admin_edit_setting", "shop_title", "Введите название магазина."),
+            "admin:edit_main_text": ("admin_edit_setting", "main_screen_text", "Введите новый главный текст\\."),
+            "admin:edit_main_photo": ("admin_edit_photo", "main_screen_photo", "Отправьте новое главное фото\\."),
+            "admin:edit_faq": ("admin_edit_setting", "faq", "Введите новый FAQ\\."),
+            "admin:edit_agreement": ("admin_edit_agreement", "agreement", "Введите новый текст соглашения\\."),
+            "admin:edit_shop_title": ("admin_edit_setting", "shop_title", "Введите название магазина\\."),
         }
         name, key, prompt = state_map[action]
         clear_state(context)
@@ -2860,14 +2998,14 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         return
     if action == "admin:settings":
         text = (
-            "<b>Настройки</b>\n\n"
-            f"Продажи: <b>{'вкл' if data['settings'].get('sales_enabled') else 'выкл'}</b>\n"
-            f"Обслуживание: <b>{'вкл' if data['settings'].get('maintenance_mode') else 'выкл'}</b>\n"
-            f"Уведомления админам: <b>{'вкл' if data['settings'].get('notify_admins') else 'выкл'}</b>\n"
-            f"Модерация отзывов: <b>{'вкл' if data['settings'].get('moderate_reviews') else 'выкл'}</b>\n"
-            f"Мин. пополнение: <b>{data['settings'].get('min_topup_amount')}</b>\n"
-            f"Порог остатков: <b>{data['settings'].get('low_stock_threshold')}</b>\n"
-            f"TTL заказа: <b>{data['settings'].get('order_ttl_minutes')} мин.</b>"
+            "*Настройки*\n\n"
+            f"Продажи: *{'вкл' if data['settings'].get('sales_enabled') else 'выкл'}*\n"
+            f"Обслуживание: *{'вкл' if data['settings'].get('maintenance_mode') else 'выкл'}*\n"
+            f"Уведомления админам: *{'вкл' if data['settings'].get('notify_admins') else 'выкл'}*\n"
+            f"Модерация отзывов: *{'вкл' if data['settings'].get('moderate_reviews') else 'выкл'}*\n"
+            f"Мин\\. пополнение: *{data['settings'].get('min_topup_amount')}*\n"
+            f"Порог остатков: *{data['settings'].get('low_stock_threshold')}*\n"
+            f"TTL заказа: *{data['settings'].get('order_ttl_minutes')} мин\\.*"
         )
         rows = [
             [InlineKeyboardButton("Продажи", callback_data="admin:toggle_setting:sales_enabled"), InlineKeyboardButton("Обслуживание", callback_data="admin:toggle_setting:maintenance_mode")],
@@ -2880,25 +3018,26 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if parts[:2] == ["admin", "set_number"]:
         key = parts[2]
         if key not in {"min_topup_amount", "low_stock_threshold", "order_ttl_minutes"}:
-            await send_or_edit(update, "Настройка не найдена.", rows_with_home([], True, ("К системе", "admin:settings")))
+            await send_or_edit(update, "Настройка не найдена\\.", rows_with_home([], True, ("К системе", "admin:settings")))
             return
         clear_state(context)
         context.user_data["state"] = {"name": "admin_set_number", "key": key}
-        await send_or_edit(update, "Введите число.", rows_with_home([], True, ("К системе", "admin:settings")))
+        await send_or_edit(update, "Введите число\\.", rows_with_home([], True, ("К системе", "admin:settings")))
         return
     if action == "admin:audit":
         logs = data.get("audit_log", [])[-30:]
-        text = "<b>Аудит</b>\n\n" + ("\n".join(f"• {h(row['time'])} | {h(row['action'])} | {h(row.get('details', ''))}" for row in reversed(logs)) or "Пока пусто.")
+        text = "*Аудит*\n\n" + ("\n".join(f"• {escape_markdown(row['time'])} \\| {escape_markdown(row['action'])} \\| {escape_markdown(row.get('details', ''))}" for row in reversed(logs)) or "Пока пусто\\.")
         await send_or_edit(update, text, rows_with_home([], True))
         return
+
     if action == "admin:duty_status":
         on_duty = user.get("admin_on_duty", True)
         status_text = "🟢 На работе" if on_duty else "🔴 Не на работе"
         text = (
-            f"<b>Статус дежурства</b>\n\n"
-            f"Текущий статус: <b>{status_text}</b>\n\n"
-            "Когда вы «На работе», вы получаете все уведомления о заказах, оплатах, арендах и обращениях в поддержку.\n"
-            "Когда вы «Не на работе», уведомления не приходят."
+            f"*Статус дежурства*\n\n"
+            f"Текущий статус: *{escape_markdown(status_text)}*\n\n"
+            "Когда вы «На работе», вы получаете все уведомления о заказах, оплатах, арендах и обращениях в поддержку\\.\n"
+            "Когда вы «Не на работе», уведомления не приходят\\."
         )
         rows = [
             [
@@ -2914,7 +3053,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         save_data(data)
         await send_or_edit(
             update,
-            "🟢 <b>Вы на работе</b>\n\nВы будете получать все уведомления.",
+            "🟢 *Вы на работе*\n\nВы будете получать все уведомления\\.",
             rows_with_home([[InlineKeyboardButton("🛠 Админ-панель", callback_data="admin:panel")]], True),
         )
         return
@@ -2924,7 +3063,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         save_data(data)
         await send_or_edit(
             update,
-            "🔴 <b>Вы не на работе</b>\n\nУведомления временно отключены.",
+            "🔴 *Вы не на работе*\n\nУведомления временно отключены\\.",
             rows_with_home([[InlineKeyboardButton("🛠 Админ-панель", callback_data="admin:panel")]], True),
         )
         return
@@ -2932,23 +3071,23 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def show_admin_user(update: Update, data: dict[str, Any], user_id: str) -> None:
     target = data["users"].get(user_id)
     if not target:
-        await send_or_edit(update, "Пользователь не найден.", rows_with_home([], True))
+        await send_or_edit(update, "Пользователь не найден\\.", rows_with_home([], True))
         return
     orders = [order for order in data["orders"].values() if str(order.get("user_id")) == user_id]
     paid = [order for order in orders if normalize_status(order.get("status", "")) in PAID_STATUSES]
     text = (
-        "<b>Пользователь</b>\n\n"
-        f"ID: <code>{h(target['id'])}</code>\n"
-        f"Username: @{h(target.get('username') or '-')}\n"
-        f"Имя: {h(target.get('full_name') or '-')}\n"
-        f"Баланс: <b>{money(target.get('balance', 0), payment_currency(data))}</b>\n"
-        f"Покупок: <b>{target.get('purchases_count', 0)}</b>\n"
-        f"Оплаченных заказов: <b>{len(paid)}</b>\n"
-        f"Заблокирован: <b>{'да' if target.get('blocked') else 'нет'}</b>\n"
-        f"Админ: <b>{'да' if user_id in data.get('admins', []) else 'нет'}</b>\n"
-        f"Реф-код: <code>ref_{h(target.get('referral_code', ''))}</code>\n"
-        f"Пришёл от: <code>{h(target.get('referred_by') or '-')}</code>\n"
-        f"Заметка: {h(target.get('notes') or '-')}"
+        "*Пользователь*\n\n"
+        f"ID: `{escape_markdown(target['id'])}`\n"
+        f"Username: @{escape_markdown(target.get('username') or '-')}\n"
+        f"Имя: {escape_markdown(target.get('full_name') or '-')}\n"
+        f"Баланс: *{escape_markdown(money(target.get('balance', 0), payment_currency(data)))}*\n"
+        f"Покупок: *{target.get('purchases_count', 0)}*\n"
+        f"Оплаченных заказов: *{len(paid)}*\n"
+        f"Заблокирован: *{'да' if target.get('blocked') else 'нет'}*\n"
+        f"Админ: *{'да' if user_id in data.get('admins', []) else 'нет'}*\n"
+        f"Реф\\-код: `ref_{escape_markdown(target.get('referral_code', ''))}`\n"
+        f"Пришёл от: `{escape_markdown(target.get('referred_by') or '-')}`\n"
+        f"Заметка: {escape_markdown(target.get('notes') or '-')}"
     )
     rows = [
         [InlineKeyboardButton("Написать", callback_data=f"admin:reply_user:{user_id}"), InlineKeyboardButton("Заметка", callback_data=f"admin:note_user:{user_id}")],
@@ -2972,7 +3111,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
                 break
         clear_state(context)
         if not target:
-            await update.message.reply_text("Пользователь не найден.")
+            await update.message.reply_text("Пользователь не найден\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         await show_admin_user(update, data, target["id"])
         return True
@@ -2980,7 +3119,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         try:
             amount = int(text)
         except ValueError:
-            await update.message.reply_text("Введите число.")
+            await update.message.reply_text("Введите число\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         target = data["users"].get(state["user_id"])
         if target:
@@ -2993,7 +3132,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
             audit(data, user["id"], action, f"{state['user_id']} | {amount}")
             save_data(data)
         clear_state(context)
-        await update.message.reply_text("Баланс обновлён.")
+        await update.message.reply_text("Баланс обновлён\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_reply_user":
         clear_state(context)
@@ -3001,15 +3140,15 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
             await context.bot.send_message(chat_id=int(state["user_id"]), text=f"Сообщение администрации:\n\n{text}")
             audit(data, user["id"], "reply_user", state["user_id"])
             save_data(data)
-            await update.message.reply_text("Сообщение отправлено.")
+            await update.message.reply_text("Сообщение отправлено\\.", parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as exc:
-            await update.message.reply_text(f"Ошибка отправки: {exc}")
+            await update.message.reply_text(f"Ошибка отправки: {escape_markdown(str(exc))}", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_ticket_reply":
         ticket = data["tickets"].get(state["ticket_id"])
         if not ticket or ticket.get("type", "support") != "support":
             clear_state(context)
-            await update.message.reply_text("Тикет поддержки не найден.")
+            await update.message.reply_text("Тикет поддержки не найден\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         ticket.setdefault("messages", [])
         ticket["messages"].append({"role": "admin", "text": text[:1500], "created_at": now_iso()})
@@ -3020,13 +3159,13 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         try:
             await context.bot.send_message(
                 chat_id=int(ticket["user_id"]),
-                text=f"🛟 <b>Ответ поддержки</b>\n\n{h(text)}",
-                parse_mode=ParseMode.HTML,
+                text=f"🛟 *Ответ поддержки*\n\n{escape_markdown(text)}",
+                parse_mode=ParseMode.MARKDOWN_V2,
                 reply_markup=rows_with_home([[InlineKeyboardButton("🛟 Написать ещё", callback_data="menu:support")]], False),
             )
-            await update.message.reply_text("Ответ отправлен в тикет.")
+            await update.message.reply_text("Ответ отправлен в тикет\\.", parse_mode=ParseMode.MARKDOWN_V2)
         except Exception as exc:
-            await update.message.reply_text(f"Ошибка отправки: {exc}")
+            await update.message.reply_text(f"Ошибка отправки: {escape_markdown(str(exc))}", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_note_user":
         target = data["users"].get(state["user_id"])
@@ -3035,22 +3174,22 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
             audit(data, user["id"], "note_user", state["user_id"])
             save_data(data)
         clear_state(context)
-        await update.message.reply_text("Заметка сохранена.")
+        await update.message.reply_text("Заметка сохранена\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_add_category":
         if text in data["catalog"]:
-            await update.message.reply_text("Такая категория уже есть.")
+            await update.message.reply_text("Такая категория уже есть\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         data["catalog"][text] = []
         audit(data, user["id"], "add_category", text)
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Категория добавлена.")
+        await update.message.reply_text("Категория добавлена\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_rename_category":
         old = state["category"]
         if text in data["catalog"]:
-            await update.message.reply_text("Такая категория уже есть.")
+            await update.message.reply_text("Такая категория уже есть\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         data["catalog"][text] = data["catalog"].pop(old)
         for order in data["orders"].values():
@@ -3062,17 +3201,17 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         audit(data, user["id"], "rename_category", f"{old} -> {text}")
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Категория переименована.")
+        await update.message.reply_text("Категория переименована\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_add_item":
         try:
             title, price, description = [part.strip() for part in text.split("|", 2)]
             price = int(price)
         except ValueError:
-            await update.message.reply_text("Формат: Название|Цена|Описание")
+            await update.message.reply_text("Формат: Название\\|Цена\\|Описание", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         if contains_unsafe(title) or contains_unsafe(description):
-            await update.message.reply_text("Этот товар не похож на легальный цифровой товар. Измените название/описание.")
+            await update.message.reply_text("Этот товар не похож на легальный цифровой товар\\. Измените название/описание\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         category = state["category"]
         data["catalog"].setdefault(category, [])
@@ -3094,33 +3233,33 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         audit(data, user["id"], "add_item", title)
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Товар добавлен.")
+        await update.message.reply_text("Товар добавлен\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_item_edit":
         item = get_item(data, state["category"], state["item_id"])
         if not item:
             clear_state(context)
-            await update.message.reply_text("Товар не найден.")
+            await update.message.reply_text("Товар не найден\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         field = state["field"]
         if field in {"price", "stock"}:
             try:
                 item[field] = int(text)
             except ValueError:
-                await update.message.reply_text("Введите число.")
+                await update.message.reply_text("Введите число\\.", parse_mode=ParseMode.MARKDOWN_V2)
                 return True
             if field == "price":
                 item[field] = max(1, item[field])
         elif field in {"title", "description", "delivery_text"}:
             if field in {"title", "description"} and contains_unsafe(text):
-                await update.message.reply_text("Значение не похоже на легальный цифровой товар.")
+                await update.message.reply_text("Значение не похоже на легальный цифровой товар\\.", parse_mode=ParseMode.MARKDOWN_V2)
                 return True
             item[field] = text
         item["updated_at"] = now_iso()
         audit(data, user["id"], f"edit_item_{field}", item["id"])
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Товар обновлён.")
+        await update.message.reply_text("Товар обновлён\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name in {"admin_set_currency", "admin_set_payment_contact", "admin_set_payment_channel", "admin_set_crypto_token", "admin_set_crypto_api_url", "admin_set_crypto_currency", "admin_set_topup_requisites", "admin_set_manual_requisites"}:
         key_map = {
@@ -3147,7 +3286,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         audit(data, user["id"], "edit_payment_setting", key)
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Настройка оплаты сохранена.")
+        await update.message.reply_text("Настройка оплаты сохранена\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_create_promo":
         try:
@@ -3156,10 +3295,10 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
             amount = int(amount)
             max_uses = int(max_uses)
         except ValueError:
-            await update.message.reply_text("Формат: CODE|percent|10|100 или CODE|fixed|50|20")
+            await update.message.reply_text("Формат: CODE\\|percent\\|10\\|100 или CODE\\|fixed\\|50\\|20", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         if promo_type not in {"percent", "fixed"}:
-            await update.message.reply_text("Тип должен быть percent или fixed.")
+            await update.message.reply_text("Тип должен быть percent или fixed\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         data.setdefault("promo_codes", {})[code] = {
             "code": code,
@@ -3173,7 +3312,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         audit(data, user["id"], "create_promo", code)
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Промокод создан.")
+        await update.message.reply_text("Промокод создан\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_broadcast":
         targets = []
@@ -3194,26 +3333,26 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         audit(data, user["id"], "broadcast", f"{state.get('target')} | {sent}")
         save_data(data)
         clear_state(context)
-        await update.message.reply_text(f"Рассылка отправлена: {sent}.")
+        await update.message.reply_text(f"Рассылка отправлена: {sent}\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name in {"admin_set_cashback", "admin_set_ref_bonus"}:
         try:
             value = int(text)
         except ValueError:
-            await update.message.reply_text("Введите число.")
+            await update.message.reply_text("Введите число\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         key = "cashback_percent" if name == "admin_set_cashback" else "referral_bonus"
         data["settings"][key] = max(0, value)
         audit(data, user["id"], "edit_marketing_setting", key)
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Настройка сохранена.")
+        await update.message.reply_text("Настройка сохранена\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_set_number":
         try:
             value = int(text)
         except ValueError:
-            await update.message.reply_text("Введите число.")
+            await update.message.reply_text("Введите число\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return True
         key = state["key"]
         if key in {"min_topup_amount", "low_stock_threshold", "order_ttl_minutes"}:
@@ -3221,7 +3360,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
             audit(data, user["id"], "edit_number_setting", key)
             save_data(data)
         clear_state(context)
-        await update.message.reply_text("Настройка сохранена.")
+        await update.message.reply_text("Настройка сохранена\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name in {"admin_edit_setting", "admin_edit_agreement"}:
         key = state["key"]
@@ -3232,7 +3371,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
         audit(data, user["id"], "edit_content", key)
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Контент обновлён.")
+        await update.message.reply_text("Контент обновлён\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
     if name == "admin_edit_button":
         key = state["key"]
@@ -3241,7 +3380,7 @@ async def handle_admin_state(update: Update, context: ContextTypes.DEFAULT_TYPE,
             audit(data, user["id"], "edit_button_label", key)
             save_data(data)
         clear_state(context)
-        await update.message.reply_text("Подпись кнопки обновлена.")
+        await update.message.reply_text("Подпись кнопки обновлена\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return True
 
     return False
@@ -3255,8 +3394,18 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     state = context.user_data.get("state") or {}
 
     if is_blocked(user):
-        await update.message.reply_text("Доступ к боту ограничен.")
+        await update.message.reply_text("Доступ к боту ограничен\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
+
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
+
+    if not admin and check_rate_limit(user):
+        return
+    if not admin:
+        update_rate_limit(user)
+        save_data(data)
 
     if state and await handle_admin_state(update, context, data, user, state, text):
         return
@@ -3277,11 +3426,11 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         save_data(data)
         clear_state(context)
         await update.message.reply_text(
-            f"🛟 <b>Тикет открыт</b>\n\nID: <code>{ticket_id}</code>\nОтвет появится здесь в боте.",
-            parse_mode=ParseMode.HTML,
+            f"🛟 *Тикет открыт*\n\nID: `{escape_markdown(ticket_id)}`\nОтвет появится здесь в боте\\.",
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=rows_with_home([], admin),
         )
-        await notify_admins(context, data, f"🔔 Новый тикет поддержки: <code>{ticket_id}</code>\nПользователь: <code>{user['id']}</code>")
+        await notify_admins(context, data, f"🔔 Новый тикет поддержки: `{escape_markdown(ticket_id)}`\nПользователь: `{escape_markdown(user['id'])}`")
         return
     if state.get("name") == "search":
         query = text.lower()
@@ -3299,34 +3448,34 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             user["active_promo"] = promo["code"]
             save_data(data)
         clear_state(context)
-        await update.message.reply_text(message)
+        await update.message.reply_text(escape_markdown(message), parse_mode=ParseMode.MARKDOWN_V2)
         return
     if state.get("name") == "topup_amount":
         try:
             amount = int(text)
         except ValueError:
-            await update.message.reply_text("Введите сумму числом.")
+            await update.message.reply_text("Введите сумму числом\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return
         min_amount = int(data["settings"].get("min_topup_amount", 10) or 10)
         if amount < min_amount:
-            await update.message.reply_text(f"Минимальная сумма: {min_amount}.")
+            await update.message.reply_text(f"Минимальная сумма: {escape_markdown(str(min_amount))}\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return
         context.user_data["state"] = {"name": "topup_wait_paid", "amount": amount}
         requisites = data["settings"].get("topup_requisites") or default_settings()["topup_requisites"]
         await update.message.reply_text(
-            f"💳 <b>Реквизиты для пополнения</b>\n\n{h(requisites)}\n\nПосле оплаты нажмите кнопку «✅ Я оплатил», затем отправьте скрин оплаты.",
-            parse_mode=ParseMode.HTML,
+            f"💳 *Реквизиты для пополнения*\n\n{escape_markdown(requisites)}\n\nПосле оплаты нажмите кнопку «✅ Я оплатил», затем отправьте скрин оплаты\\.",
+            parse_mode=ParseMode.MARKDOWN_V2,
             reply_markup=rows_with_home([[InlineKeyboardButton("✅ Я оплатил", callback_data="topup:paid")]], admin),
         )
         return
     if state.get("name") == "topup_receipt":
-        await update.message.reply_text("📸 Пришлите скрин оплаты фотографией. Текстом чек не подтверждается.")
+        await update.message.reply_text("📸 Пришлите скрин оплаты фотографией\\. Текстом чек не подтверждается\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     if state.get("name") == "topup_wait_paid":
-        await update.message.reply_text("После оплаты нажмите кнопку «✅ Я оплатил», затем отправьте скрин оплаты.")
+        await update.message.reply_text("После оплаты нажмите кнопку «✅ Я оплатил», затем отправьте скрин оплаты\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     if state.get("name") == "manual_order_receipt":
-        await update.message.reply_text("📸 Пришлите скрин оплаты аренды фотографией. Текстом чек не подтверждается.")
+        await update.message.reply_text("📸 Пришлите скрин оплаты аренды фотографией\\. Текстом чек не подтверждается\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     if state.get("name") == "rental_request":
         await save_rental_request(update, context, data, user, state["order_id"], scooter_code=text)
@@ -3336,7 +3485,7 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         order = data["orders"].get(order_id)
         if not order or order.get("user_id") != user["id"]:
             clear_state(context)
-            await update.message.reply_text("Заказ не найден.")
+            await update.message.reply_text("Заказ не найден\\.", parse_mode=ParseMode.MARKDOWN_V2)
             return
         review_id = generate_id("REV")
         first = order.get("items", [{}])[0]
@@ -3356,18 +3505,27 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         audit(data, user["id"], "review_created", review_id)
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Отзыв сохранён." if data["reviews"][review_id]["status"] == "approved" else "Отзыв отправлен на модерацию.")
+        await update.message.reply_text("Отзыв сохранён\\." if data["reviews"][review_id]["status"] == "approved" else "Отзыв отправлен на модерацию\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
 
-    await update.message.reply_text("Откройте меню кнопкой /start.", reply_markup=main_menu(data, admin))
+    await update.message.reply_text("Откройте меню кнопкой /start\\.", parse_mode=ParseMode.MARKDOWN_V2, reply_markup=main_menu(data, admin))
 
 
 async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
+    admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
+    if not admin and check_rate_limit(user):
+        return
+    if not admin:
+        update_rate_limit(user)
+        save_data(data)
     state = context.user_data.get("state") or {}
     if state.get("name") == "topup_wait_paid":
-        await update.message.reply_text("Сначала нажмите кнопку «✅ Я оплатил», затем отправьте скрин оплаты.")
+        await update.message.reply_text("Сначала нажмите кнопку «✅ Я оплатил», затем отправьте скрин оплаты\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     if state.get("name") == "topup_receipt":
         photo_id = update.message.photo[-1].file_id
@@ -3403,14 +3561,14 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             audit(data, user["id"], "edit_item_photo", item["id"])
             save_data(data)
         clear_state(context)
-        await update.message.reply_text("Фото товара обновлено.")
+        await update.message.reply_text("Фото товара обновлено\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
     if state.get("name") == "admin_edit_photo":
         data["settings"][state["key"]] = photo_id
         audit(data, user["id"], "edit_photo", state["key"])
         save_data(data)
         clear_state(context)
-        await update.message.reply_text("Фото обновлено.")
+        await update.message.reply_text("Фото обновлено\\.", parse_mode=ParseMode.MARKDOWN_V2)
 
 
 async def menu_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -3421,23 +3579,26 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     data = load_data()
     get_or_create_user(data, update.effective_user)
     if not is_admin(data, update.effective_user.id):
-        await update.message.reply_text("Нет доступа.")
+        await update.message.reply_text("Нет доступа\\.", parse_mode=ParseMode.MARKDOWN_V2)
         return
-    await update.message.reply_text("Админ-панель", reply_markup=admin_panel_keyboard(get_or_create_user(data, update.effective_user)))
+    await update.message.reply_text("Админ\\-панель", parse_mode=ParseMode.MARKDOWN_V2, reply_markup=admin_panel_keyboard(get_or_create_user(data, update.effective_user)))
 
 
 async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
     text = (
-        "<b>Профиль</b>\n\n"
-        f"ID: <code>{h(user['id'])}</code>\n"
-        f"Username: @{h(user.get('username') or '-')}\n"
-        f"Имя: {h(user.get('full_name') or '-')}\n"
-        f"Покупок: <b>{int(user.get('purchases_count', 0))}</b>\n"
-        f"Баланс: <b>{money(user.get('balance', 0), payment_currency(data))}</b>\n"
-        f"Реф-код: <code>ref_{h(user.get('referral_code'))}</code>"
+        "*Профиль*\n\n"
+        f"ID: `{escape_markdown(user['id'])}`\n"
+        f"Username: @{escape_markdown(user.get('username') or '-')}\n"
+        f"Имя: {escape_markdown(user.get('full_name') or '-')}\n"
+        f"Покупок: *{int(user.get('purchases_count', 0))}*\n"
+        f"Баланс: *{escape_markdown(money(user.get('balance', 0), payment_currency(data)))}*\n"
+        f"Реф\\-код: `ref_{escape_markdown(user.get('referral_code'))}`"
     )
     await update.message.reply_text(
         text,
@@ -3448,7 +3609,7 @@ async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             ],
             admin,
         ),
-        parse_mode=ParseMode.HTML,
+        parse_mode=ParseMode.MARKDOWN_V2,
     )
 
 
@@ -3456,41 +3617,57 @@ async def orders_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
     orders = [order for order in data["orders"].values() if str(order.get("user_id")) == user["id"]]
     orders.sort(key=lambda item: item.get("created_at", ""), reverse=True)
     rows = [
         [InlineKeyboardButton(f"{order['order_id']} | {status_label(order.get('status', ''))}", callback_data=f"order:{order['order_id']}")]
         for order in orders[:25]
     ]
-    await update.message.reply_text("🧾 Мои поездки" if rows else "🧾 Поездок пока нет.", reply_markup=rows_with_home(rows, admin))
+    await update.message.reply_text("🧾 Мои поездки" if rows else "🧾 Поездок пока нет\\.", parse_mode=ParseMode.MARKDOWN_V2, reply_markup=rows_with_home(rows, admin))
 
 
 async def cart_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
-    await show_cart(update, context, data, user, is_admin(data, update.effective_user.id))
+    admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
+    await show_cart(update, context, data, user, admin)
 
 
 async def support_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
     clear_state(context)
     context.user_data["state"] = {"name": "support"}
-    await update.message.reply_text("🛟 Напишите вопрос следующим сообщением. Ответ появится здесь в боте.", reply_markup=rows_with_home([], admin))
+    await update.message.reply_text("🛟 Напишите вопрос следующим сообщением\\. Ответ появится здесь в боте\\.", parse_mode=ParseMode.MARKDOWN_V2, reply_markup=rows_with_home([], admin))
 
 
 async def promo_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
     clear_state(context)
     context.user_data["state"] = {"name": "promo"}
-    await update.message.reply_text("Введите промокод следующим сообщением.", reply_markup=rows_with_home([], admin))
+    await update.message.reply_text("Введите промокод следующим сообщением\\.", parse_mode=ParseMode.MARKDOWN_V2, reply_markup=rows_with_home([], admin))
 
 
 async def pay_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     data = load_data()
     user = get_or_create_user(data, update.effective_user)
     admin = is_admin(data, update.effective_user.id)
+    if data["settings"].get("maintenance_mode") and not admin:
+        await update.message.reply_text("🔧 *Бот на обслуживании*\n\nЗагляни позже\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        return
     await show_cart(update, context, data, user, admin)
 
 
