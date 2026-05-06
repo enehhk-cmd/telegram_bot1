@@ -342,6 +342,7 @@ def ensure_user_defaults(user: dict[str, Any]) -> bool:
         "referred_by": "",
         "notes": "",
         "tags": [],
+        "admin_on_duty": True,
     }
     for key, value in defaults.items():
         if key not in user:
@@ -1002,7 +1003,9 @@ def buy_keyboard(data: dict[str, Any], category: str, item_id: str, admin: bool)
     return rows_with_home(rows, admin, ("К товару", f"product:{category}:{item_id}"))
 
 
-def admin_panel_keyboard() -> InlineKeyboardMarkup:
+def admin_panel_keyboard(user: dict[str, Any] | None = None) -> InlineKeyboardMarkup:
+    on_duty = user.get("admin_on_duty", True) if user else True
+    duty_label = "🟢 На работе" if on_duty else "🔴 Не на работе"
     rows = [
         [InlineKeyboardButton("Обзор", callback_data="admin:dashboard"), InlineKeyboardButton("Заказы", callback_data="admin:orders:all")],
         [InlineKeyboardButton("🧾 Оплаты аренды", callback_data="admin:manual_payments")],
@@ -1014,6 +1017,7 @@ def admin_panel_keyboard() -> InlineKeyboardMarkup:
         [InlineKeyboardButton("Поддержка", callback_data="admin:tickets")],
         [InlineKeyboardButton("Отзывы", callback_data="admin:reviews")],
         [InlineKeyboardButton("Система", callback_data="admin:settings"), InlineKeyboardButton("Аудит", callback_data="admin:audit")],
+        [InlineKeyboardButton(duty_label, callback_data="admin:duty_status")],
     ]
     return rows_with_home(rows, True)
 
@@ -1035,6 +1039,9 @@ async def notify_admins(context: ContextTypes.DEFAULT_TYPE, data: dict[str, Any]
     if not data["settings"].get("notify_admins", True):
         return
     for admin_id in data.get("admins", []):
+        admin_user = data["users"].get(str(admin_id))
+        if admin_user and not admin_user.get("admin_on_duty", True):
+            continue
         try:
             await context.bot.send_message(chat_id=int(admin_id), text=text, parse_mode=ParseMode.HTML)
         except Exception as exc:
@@ -1760,6 +1767,9 @@ async def notify_rental_request(context: ContextTypes.DEFAULT_TYPE, data: dict[s
         ]
     )
     for admin_id in data.get("admins", []):
+        admin_user = data["users"].get(str(admin_id))
+        if admin_user and not admin_user.get("admin_on_duty", True):
+            continue
         try:
             await context.bot.send_message(chat_id=int(admin_id), text=text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
             if rental.get("qr_photo_id"):
@@ -1834,6 +1844,9 @@ async def notify_topup_request(context: ContextTypes.DEFAULT_TYPE, data: dict[st
         ]
     )
     for admin_id in data.get("admins", []):
+        admin_user = data["users"].get(str(admin_id))
+        if admin_user and not admin_user.get("admin_on_duty", True):
+            continue
         try:
             if ticket.get("receipt_photo_id"):
                 await context.bot.send_photo(
@@ -1908,6 +1921,9 @@ async def notify_manual_order_receipt(context: ContextTypes.DEFAULT_TYPE, data: 
         ]
     )
     for admin_id in data.get("admins", []):
+        admin_user = data["users"].get(str(admin_id))
+        if admin_user and not admin_user.get("admin_on_duty", True):
+            continue
         try:
             await context.bot.send_photo(
                 chat_id=int(admin_id),
@@ -2108,7 +2124,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
     if action == "admin:panel":
         clear_state(context)
-        await send_or_edit(update, "<b>Админ-панель</b>\n\nВсе основные действия доступны кнопками.", admin_panel_keyboard())
+        await send_or_edit(update, "<b>Админ-панель</b>\n\nВсе основные действия доступны кнопками.", admin_panel_keyboard(user))
         return
     if action == "admin:dashboard":
         await send_or_edit(update, dashboard_text(data), rows_with_home([[InlineKeyboardButton("Экспорт заказов CSV", callback_data="admin:export_orders")]], True))
@@ -2174,7 +2190,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if parts[:2] == ["admin", "view_order"]:
         order = data["orders"].get(parts[2])
         if not order:
-            await send_or_edit(update, "Заказ не найден.", admin_panel_keyboard())
+            await send_or_edit(update, "Заказ не найден.", admin_panel_keyboard(user))
             return
         lines = [
             "<b>Заказ</b>",
@@ -2218,7 +2234,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if parts[:2] in (["admin", "confirm"], ["admin", "reject"], ["admin", "refund"]):
         order = data["orders"].get(parts[2])
         if not order:
-            await send_or_edit(update, "Заказ не найден.", admin_panel_keyboard())
+            await send_or_edit(update, "Заказ не найден.", admin_panel_keyboard(user))
             return
         if parts[1] == "confirm":
             if order.get("payment_method") == "manual" and normalize_status(order.get("status", "")) == "awaiting_manual" and not order.get("payment_proof_photo_id"):
@@ -2245,7 +2261,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     rows_with_home([[InlineKeyboardButton("🧾 К оплатам аренды", callback_data="admin:manual_payments")]], True),
                 )
             else:
-                await send_or_edit(update, "Заказ подтверждён.", admin_panel_keyboard())
+                await send_or_edit(update, "Заказ подтверждён.", admin_panel_keyboard(user))
         elif parts[1] == "reject":
             order["status"] = "rejected"
             if order.get("payment_method") == "manual":
@@ -2268,12 +2284,12 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
                     rows_with_home([[InlineKeyboardButton("🧾 К оплатам аренды", callback_data="admin:manual_payments")]], True),
                 )
             else:
-                await send_or_edit(update, "Заказ отклонён.", admin_panel_keyboard())
+                await send_or_edit(update, "Заказ отклонён.", admin_panel_keyboard(user))
         else:
             order["status"] = "refunded"
             audit(data, user["id"], "order_refunded_marked", order["order_id"])
             save_data(data)
-            await send_or_edit(update, "Локальная отметка возврата поставлена.", admin_panel_keyboard())
+            await send_or_edit(update, "Локальная отметка возврата поставлена.", admin_panel_keyboard(user))
         return
     if action == "admin:users":
         await send_or_edit(update, "<b>Пользователи</b>", users_list_keyboard(data))
@@ -2355,7 +2371,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         data["catalog"].pop(category, None)
         audit(data, user["id"], "delete_category", category)
         save_data(data)
-        await send_or_edit(update, "Категория удалена.", admin_panel_keyboard())
+        await send_or_edit(update, "Категория удалена.", admin_panel_keyboard(user))
         return
     if parts[:2] == ["admin", "add_item"]:
         clear_state(context)
@@ -2366,7 +2382,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         category, item_id = parts[2], parts[3]
         item = get_item(data, category, item_id)
         if not item:
-            await send_or_edit(update, "Товар не найден.", admin_panel_keyboard())
+            await send_or_edit(update, "Товар не найден.", admin_panel_keyboard(user))
             return
         text = (
             "<b>Редактирование товара</b>\n\n"
@@ -2875,6 +2891,43 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         text = "<b>Аудит</b>\n\n" + ("\n".join(f"• {h(row['time'])} | {h(row['action'])} | {h(row.get('details', ''))}" for row in reversed(logs)) or "Пока пусто.")
         await send_or_edit(update, text, rows_with_home([], True))
         return
+    if action == "admin:duty_status":
+        on_duty = user.get("admin_on_duty", True)
+        status_text = "🟢 На работе" if on_duty else "🔴 Не на работе"
+        text = (
+            f"<b>Статус дежурства</b>\n\n"
+            f"Текущий статус: <b>{status_text}</b>\n\n"
+            "Когда вы «На работе», вы получаете все уведомления о заказах, оплатах, арендах и обращениях в поддержку.\n"
+            "Когда вы «Не на работе», уведомления не приходят."
+        )
+        rows = [
+            [
+                InlineKeyboardButton("🟢 На работе", callback_data="admin:duty_on"),
+                InlineKeyboardButton("🔴 Не на работе", callback_data="admin:duty_off"),
+            ],
+        ]
+        await send_or_edit(update, text, rows_with_home(rows, True, ("🛠 К админке", "admin:panel")))
+        return
+    if action == "admin:duty_on":
+        user["admin_on_duty"] = True
+        audit(data, user["id"], "duty_on", "")
+        save_data(data)
+        await send_or_edit(
+            update,
+            "🟢 <b>Вы на работе</b>\n\nВы будете получать все уведомления.",
+            rows_with_home([[InlineKeyboardButton("🛠 Админ-панель", callback_data="admin:panel")]], True),
+        )
+        return
+    if action == "admin:duty_off":
+        user["admin_on_duty"] = False
+        audit(data, user["id"], "duty_off", "")
+        save_data(data)
+        await send_or_edit(
+            update,
+            "🔴 <b>Вы не на работе</b>\n\nУведомления временно отключены.",
+            rows_with_home([[InlineKeyboardButton("🛠 Админ-панель", callback_data="admin:panel")]], True),
+        )
+        return
 
 async def show_admin_user(update: Update, data: dict[str, Any], user_id: str) -> None:
     target = data["users"].get(user_id)
@@ -3370,7 +3423,7 @@ async def admin_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
     if not is_admin(data, update.effective_user.id):
         await update.message.reply_text("Нет доступа.")
         return
-    await update.message.reply_text("Админ-панель", reply_markup=admin_panel_keyboard())
+    await update.message.reply_text("Админ-панель", reply_markup=admin_panel_keyboard(get_or_create_user(data, update.effective_user)))
 
 
 async def profile_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
