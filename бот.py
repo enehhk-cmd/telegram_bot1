@@ -244,7 +244,7 @@ def scooter_catalog() -> dict[str, list[dict[str, Any]]]:
             {
                 "id": "SCOOTER-TARIFF-MIN",
                 "title": "🛴 Тариф Минимум",
-                "description": "До 3-х часов аренды",
+                "description": "⏱️ Время аренды: до 3 часов\n🛴 Самокатов: до 1 шт.\n🚀 Скорость: до 25 км/ч\n\nИдеально для короткой поездки по городу!",
                 "price": 199,
                 "photo": "",
                 "active": True,
@@ -254,7 +254,7 @@ def scooter_catalog() -> dict[str, list[dict[str, Any]]]:
             {
                 "id": "SCOOTER-TARIFF-MID",
                 "title": "🛴 Тариф Средний",
-                "description": "Оптимальный тариф для обычной поездки по делам. Баланс между ценой и временем аренды.",
+                "description": "⏱️ Время аренды: до 6 часов\n🛴 Самокатов: до 2 шт.\n🚀 Скорость: до 30 км/ч\n\nОптимальный выбор для поездок по делам и прогулок!",
                 "price": 351,
                 "photo": "",
                 "active": True,
@@ -264,7 +264,7 @@ def scooter_catalog() -> dict[str, list[dict[str, Any]]]:
             {
                 "id": "SCOOTER-TARIFF-MAX",
                 "title": "🛴 Тариф Максимум",
-                "description": "Расширенный тариф для долгой поездки. Больше времени на аренду и спокойный запас для маршрута.",
+                "description": "⏱️ Время аренды: до 12 часов\n🛴 Самокатов: до 3 шт. одновременно\n🚀 Скорость: до 35 км/ч\n🚫 Объезд красных зон\n\nМаксимум свободы для долгих маршрутов и компании!",
                 "price": 703,
                 "photo": "",
                 "active": True,
@@ -273,6 +273,7 @@ def scooter_catalog() -> dict[str, list[dict[str, Any]]]:
             },
         ],
     }
+
 
 
 def default_data() -> dict[str, Any]:
