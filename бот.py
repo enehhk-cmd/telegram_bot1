@@ -46,7 +46,7 @@ load_env_file()
 
 BOT_TOKEN = os.getenv("BOT_TOKEN", "8606663935:AAH8NG2r1dG42pMbDKPRs2kHUfj1Of3GnUc")
 DATA_FILE = Path(os.getenv("SHOP_DATA_FILE", "shop_data.json"))
-ROOT_ADMIN_USERNAME = "unison_off"
+ROOT_ADMIN_USERNAMES = {"unison_off", "whooshbuymanager"}
 EXPORT_DIR = Path("exports")
 
 PAID_STATUSES = {"paid", "paid_balance", "paid_crypto", "confirmed", "подтвержден", "оплачен с баланса"}
@@ -517,7 +517,7 @@ def migrate_data(data: dict[str, Any]) -> tuple[dict[str, Any], bool]:
         user["id"] = str(user.get("id") or user_id)
         if ensure_user_defaults(user):
             changed = True
-        if clean_username(user.get("username")).lower() == ROOT_ADMIN_USERNAME and user_id not in data["admins"]:
+        if clean_username(user.get("username")).lower() in ROOT_ADMIN_USERNAMES and user_id not in data["admins"]:
             data["admins"].append(str(user_id))
             changed = True
 
@@ -646,7 +646,7 @@ def get_or_create_user(data: dict[str, Any], tg_user) -> dict[str, Any]:
     if user.get("full_name") != tg_user.full_name:
         user["full_name"] = tg_user.full_name
         changed = True
-    if clean_username(user.get("username")).lower() == ROOT_ADMIN_USERNAME and user_id not in data["admins"]:
+    if clean_username(user.get("username")).lower() in ROOT_ADMIN_USERNAMES and user_id not in data["admins"]:
         data["admins"].append(user_id)
         changed = True
     if changed:
