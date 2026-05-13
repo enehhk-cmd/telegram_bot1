@@ -65,6 +65,7 @@ BUTTON_DEFAULTS = {
     "support": "🛟 Поддержка",
     "faq": "❓ FAQ",
     "agreement": "📜 Правила аренды",
+    "sell_account": "💰 Продать аккаунт",
     "admin": "🛠 РАЗДЕЛ АДМИНОВ",
 }
 
@@ -310,7 +311,8 @@ def default_data() -> dict[str, Any]:
         "audit_log": [],
         "settings": default_settings(),
         "agreement": default_agreement(),
-        "schema_version": 13,
+        "account_sales": {},
+        "schema_version": 14,
     }
 
 
@@ -620,7 +622,16 @@ def migrate_data(data: dict[str, Any]) -> tuple[dict[str, Any], bool]:
                 user["last_message_time"] = 0
                 changed = True
 
-    data["schema_version"] = 13
+    if int(data.get("schema_version", 0) or 0) < 14:
+        for order in data.get("orders", {}).values():
+            if "confirmed_by_admin_id" not in order:
+                order["confirmed_by_admin_id"] = ""
+                changed = True
+        if "account_sales" not in data:
+            data["account_sales"] = {}
+            changed = True
+
+    data["schema_version"] = 14
     return data, changed
 
 
@@ -912,6 +923,7 @@ def create_order(
         "payment_id": "",
         "purchase_counted": False,
         "referral_bonus_applied": False,
+        "confirmed_by_admin_id": "",
         "created_at": now_iso(),
         "confirmed_at": "",
         "paid_at": "",
@@ -990,6 +1002,7 @@ def main_menu(data: dict[str, Any], admin: bool) -> InlineKeyboardMarkup:
         [InlineKeyboardButton(button_label(data, "balance"), callback_data="menu:balance"), InlineKeyboardButton(button_label(data, "orders"), callback_data="menu:orders")],
         [InlineKeyboardButton(button_label(data, "reviews"), callback_data="menu:reviews"), InlineKeyboardButton(button_label(data, "support"), callback_data="menu:support")],
         [InlineKeyboardButton(button_label(data, "faq"), callback_data="menu:faq"), InlineKeyboardButton(button_label(data, "agreement"), callback_data="menu:agreement")],
+        [InlineKeyboardButton(button_label(data, "sell_account"), callback_data="menu:sell_account")],
     ]
     if admin:
         rows.append([InlineKeyboardButton(button_label(data, "admin"), callback_data="admin:panel")])
@@ -1043,19 +1056,53 @@ def admin_panel_keyboard(user: dict[str, Any] | None = None) -> InlineKeyboardMa
     on_duty = user.get("admin_on_duty", True) if user else True
     duty_label = "🟢 На работе" if on_duty else "🔴 Не на работе"
     rows = [
-        [InlineKeyboardButton("Обзор", callback_data="admin:dashboard"), InlineKeyboardButton("Заказы", callback_data="admin:orders:all")],
-        [InlineKeyboardButton("🧾 Оплаты аренды", callback_data="admin:manual_payments")],
-        [InlineKeyboardButton("Каталог", callback_data="admin:catalog"), InlineKeyboardButton("Пользователи", callback_data="admin:users")],
-        [InlineKeyboardButton("Оплата", callback_data="admin:payments"), InlineKeyboardButton("Промокоды", callback_data="admin:promos")],
-        [InlineKeyboardButton("Рефералка", callback_data="admin:referrals"), InlineKeyboardButton("Рассылки", callback_data="admin:marketing")],
-        [InlineKeyboardButton("Внешний вид", callback_data="admin:appearance"), InlineKeyboardButton("Тексты", callback_data="admin:content")],
-        [InlineKeyboardButton("🛴 Аренды", callback_data="admin:rentals"), InlineKeyboardButton("💳 Пополнения", callback_data="admin:topups")],
-        [InlineKeyboardButton("Поддержка", callback_data="admin:tickets")],
-        [InlineKeyboardButton("Отзывы", callback_data="admin:reviews")],
-        [InlineKeyboardButton("Система", callback_data="admin:settings"), InlineKeyboardButton("Аудит", callback_data="admin:audit")],
+        [InlineKeyboardButton("📊 Мониторинг", callback_data="admin:monitoring"), InlineKeyboardButton("📦 Каталог", callback_data="admin:catalog")],
+        [InlineKeyboardButton("⚙️ Настройки", callback_data="admin:settings_menu"), InlineKeyboardButton("📋 Контент", callback_data="admin:content_menu")],
+        [InlineKeyboardButton("👥 Пользователи", callback_data="admin:users"), InlineKeyboardButton("🛠 Система", callback_data="admin:system_menu")],
+        [InlineKeyboardButton("💰 Продажи аккаунтов", callback_data="admin:account_sales")],
+        [InlineKeyboardButton("Обзор", callback_data="admin:dashboard")],
         [InlineKeyboardButton(duty_label, callback_data="admin:duty_status")],
     ]
     return rows_with_home(rows, True)
+
+
+def admin_monitoring_keyboard() -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("🧾 Оплаты аренды", callback_data="admin:manual_payments")],
+        [InlineKeyboardButton("💳 Пополнения баланса", callback_data="admin:topups")],
+        [InlineKeyboardButton("🛴 Заявки на аренду", callback_data="admin:rentals")],
+        [InlineKeyboardButton("🧾 Все заказы", callback_data="admin:orders:all")],
+    ]
+    return rows_with_home(rows, True, ("🛠 К админке", "admin:panel"))
+
+
+def admin_settings_menu_keyboard() -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("💰 Платежи", callback_data="admin:payments")],
+        [InlineKeyboardButton("🎁 Рефералы", callback_data="admin:referrals")],
+        [InlineKeyboardButton("📊 Маркетинг", callback_data="admin:marketing")],
+        [InlineKeyboardButton("🔧 Система", callback_data="admin:settings")],
+    ]
+    return rows_with_home(rows, True, ("🛠 К админке", "admin:panel"))
+
+
+def admin_content_menu_keyboard() -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("🎨 Внешний вид", callback_data="admin:appearance")],
+        [InlineKeyboardButton("📝 Контент", callback_data="admin:content")],
+        [InlineKeyboardButton("🎟 Промокоды", callback_data="admin:promos")],
+        [InlineKeyboardButton("💬 Отзывы", callback_data="admin:reviews")],
+        [InlineKeyboardButton("🛟 Поддержка", callback_data="admin:tickets")],
+    ]
+    return rows_with_home(rows, True, ("🛠 К админке", "admin:panel"))
+
+
+def admin_system_menu_keyboard() -> InlineKeyboardMarkup:
+    rows = [
+        [InlineKeyboardButton("📋 Аудит", callback_data="admin:audit")],
+        [InlineKeyboardButton("📤 Экспорт заказов CSV", callback_data="admin:export_orders")],
+    ]
+    return rows_with_home(rows, True, ("🛠 К админке", "admin:panel"))
 
 
 async def send_or_edit(update: Update, text: str, reply_markup: InlineKeyboardMarkup | None = None) -> None:
@@ -1238,6 +1285,23 @@ async def menu_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         context.user_data["state"] = {"name": "promo"}
         await send_or_edit(update, "Введите промокод следующим сообщением\\.", rows_with_home([], admin))
         return
+    if action == "menu:sell_account":
+        clear_state(context)
+        context.user_data["state"] = {"name": "sell_account_phone"}
+        await send_or_edit(
+            update,
+            (
+                "*💰 Продать аккаунт Whoosh*\n\n"
+                "Мы принимаем аккаунты Whoosh с балансом\\.\n\n"
+                "Шаг 1 из 4\\. Введите номер телефона, привязанный к аккаунту Whoosh\\:"
+            ),
+            rows_with_home([], admin),
+        )
+        return
+    if action == "menu:sell_account_cancel":
+        clear_state(context)
+        await send_or_edit(update, "Заявка на продажу аккаунта отменена\\.", rows_with_home([], admin))
+        return
 
 
 async def topup_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -1264,6 +1328,29 @@ async def topup_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             rows_with_home([], admin),
         )
         return
+
+
+async def sell_account_debt_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    data = load_data()
+    user = get_or_create_user(data, update.effective_user)
+    admin = is_admin(data, update.effective_user.id)
+    if check_rate_limit(user):
+        await update.callback_query.answer()
+        return
+    update_rate_limit(user)
+    save_data(data)
+    state = context.user_data.get("state") or {}
+    if state.get("name") != "sell_account_debt":
+        await update.callback_query.answer()
+        return
+    has_debt = update.callback_query.data.split(":", 1)[1] == "yes"
+    context.user_data["state"] = {**state, "name": "sell_account_requisites", "has_debt": has_debt}
+    debt_label = "⚠️ Есть задолженность" if has_debt else "✅ Нет задолженности"
+    await send_or_edit(
+        update,
+        f"Задолженность: *{escape_markdown(debt_label)}*\\n\\nШаг 4 из 4\\. Введите реквизиты для получения оплаты за аккаунт \\(номер карты, СБП, кошелёк и т\\.д\\.\\)\\:",
+        rows_with_home([[InlineKeyboardButton("❌ Отменить", callback_data="menu:sell_account_cancel")]], admin),
+    )
 
 
 async def category_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -2264,6 +2351,80 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         clear_state(context)
         await send_or_edit(update, "*Админ\\-панель*\n\nВсе основные действия доступны кнопками\\.", admin_panel_keyboard(user))
         return
+    if action == "admin:monitoring":
+        await send_or_edit(update, "*📊 Мониторинг*\n\nВыберите раздел для просмотра\\.", admin_monitoring_keyboard())
+        return
+    if action == "admin:settings_menu":
+        await send_or_edit(update, "*⚙️ Настройки*\n\nВыберите раздел настроек\\.", admin_settings_menu_keyboard())
+        return
+    if action == "admin:content_menu":
+        await send_or_edit(update, "*📋 Контент*\n\nВыберите раздел контента\\.", admin_content_menu_keyboard())
+        return
+    if action == "admin:system_menu":
+        await send_or_edit(update, "*🛠 Система*\n\nВыберите действие\\.", admin_system_menu_keyboard())
+        return
+    if action == "admin:account_sales":
+        sales = list(data.get("account_sales", {}).values())
+        sales.sort(key=lambda s: s.get("created_at", ""), reverse=True)
+        status_emoji = {"new": "🆕", "approved": "✅", "rejected": "❌"}
+        rows = [
+            [InlineKeyboardButton(
+                f"{status_emoji.get(s.get('status', 'new'), '🆕')} {s['sale_id']} | @{s.get('username') or '-'}",
+                callback_data=f"admin:sale:{s['sale_id']}",
+            )]
+            for s in sales[:30]
+        ]
+        text = "*💰 Продажи аккаунтов*\n\n🆕 новая · ✅ одобрена · ❌ отклонена"
+        await send_or_edit(update, text, rows_with_home(rows, True, ("🛠 К админке", "admin:panel")))
+        return
+    if parts[:2] == ["admin", "sale"]:
+        sale = data.get("account_sales", {}).get(parts[2])
+        if not sale:
+            await send_or_edit(update, "Заявка не найдена\\.", rows_with_home([], True, ("💰 К продажам", "admin:account_sales")))
+            return
+        debt_label = "⚠️ Есть задолженность" if sale.get("has_debt") else "✅ Нет задолженности"
+        status_labels = {"new": "🆕 Новая", "approved": "✅ Одобрена", "rejected": "❌ Отклонена"}
+        text = (
+            "*💰 Заявка на продажу аккаунта*\n\n"
+            f"ID: `{escape_markdown(sale['sale_id'])}`\n"
+            f"Пользователь: `{escape_markdown(sale['user_id'])}` @{escape_markdown(sale.get('username') or '-')}\n"
+            f"Телефон: `{escape_markdown(sale.get('phone', ''))}`\n"
+            f"Контакт: {escape_markdown(sale.get('contact_username', ''))}\n"
+            f"Задолженность: *{escape_markdown(debt_label)}*\n"
+            f"Реквизиты: {escape_markdown(sale.get('requisites', ''))}\n"
+            f"Статус: *{escape_markdown(status_labels.get(sale.get('status', 'new'), sale.get('status', 'new')))}*"
+        )
+        rows = []
+        if sale.get("status") == "new":
+            rows.append([
+                InlineKeyboardButton("✅ Одобрить", callback_data=f"admin:sale_approve:{sale['sale_id']}"),
+                InlineKeyboardButton("❌ Отклонить", callback_data=f"admin:sale_reject:{sale['sale_id']}"),
+            ])
+        await send_or_edit(update, text, rows_with_home(rows, True, ("💰 К продажам", "admin:account_sales")))
+        return
+    if parts[:2] in (["admin", "sale_approve"], ["admin", "sale_reject"]):
+        sale = data.get("account_sales", {}).get(parts[2])
+        if not sale:
+            await send_or_edit(update, "Заявка не найдена\\.", rows_with_home([], True, ("💰 К продажам", "admin:account_sales")))
+            return
+        approve = parts[1] == "sale_approve"
+        sale["status"] = "approved" if approve else "rejected"
+        sale["reviewed_by_admin_id"] = user["id"]
+        sale["reviewed_at"] = now_iso()
+        audit(data, user["id"], "account_sale_approved" if approve else "account_sale_rejected", sale["sale_id"])
+        save_data(data)
+        result_text = "✅ Заявка одобрена\\." if approve else "❌ Заявка отклонена\\."
+        try:
+            user_msg = (
+                f"✅ *Ваша заявка на продажу аккаунта одобрена*\n\nID: `{escape_markdown(sale['sale_id'])}`\n\nС вами свяжутся для завершения сделки\\."
+                if approve else
+                f"❌ *Ваша заявка на продажу аккаунта отклонена*\n\nID: `{escape_markdown(sale['sale_id'])}`\n\nЕсли у вас есть вопросы, обратитесь в поддержку\\."
+            )
+            await context.bot.send_message(chat_id=int(sale["user_id"]), text=user_msg, parse_mode=ParseMode.MARKDOWN_V2)
+        except Exception:
+            pass
+        await send_or_edit(update, result_text, rows_with_home([[InlineKeyboardButton("💰 К продажам", callback_data="admin:account_sales")]], True))
+        return
     if action == "admin:dashboard":
         await send_or_edit(update, dashboard_text(data), rows_with_home([[InlineKeyboardButton("Экспорт заказов CSV", callback_data="admin:export_orders")]], True))
         return
@@ -2378,7 +2539,17 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             if order.get("payment_method") == "manual" and normalize_status(order.get("status", "")) == "awaiting_manual" and not order.get("payment_proof_photo_id"):
                 await send_or_edit(update, "Сначала пользователь должен отправить скрин оплаты через кнопку «Я оплатил»\\.", rows_with_home([[InlineKeyboardButton("К заказу", callback_data=f"admin:view_order:{order['order_id']}")]], True))
                 return
+            if order.get("confirmed_by_admin_id"):
+                confirming_admin = data["users"].get(str(order["confirmed_by_admin_id"]))
+                admin_username = f"@{confirming_admin.get('username')}" if confirming_admin and confirming_admin.get("username") else f"ID {order['confirmed_by_admin_id']}"
+                await send_or_edit(
+                    update,
+                    f"Этот заказ уже подтвержден администратором {escape_markdown(admin_username)}\\.",
+                    rows_with_home([[InlineKeyboardButton("К заказу", callback_data=f"admin:view_order:{order['order_id']}")]], True),
+                )
+                return
             complete_order(data, order, "paid")
+            order["confirmed_by_admin_id"] = user["id"]
             if order.get("payment_method") == "manual":
                 order["payment_proof_status"] = "confirmed"
             audit(data, user["id"], "order_confirmed", order["order_id"])
@@ -2766,6 +2937,9 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if not rental:
             await send_or_edit(update, "Заявка не найдена\\.", rows_with_home([], True, ("🛴 К арендам", "admin:rentals")))
             return
+        if rental.get("status") in ("ready", "failed"):
+            await send_or_edit(update, "Эта заявка на аренду уже обработана\\.", rows_with_home([[InlineKeyboardButton("🛴 К арендам", callback_data="admin:rentals")]], True))
+            return
         ok = parts[1] == "rental_ok"
         rental["status"] = "ready" if ok else "failed"
         rental["resolved_at"] = now_iso()
@@ -2912,6 +3086,9 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         if not ticket or ticket.get("type") != "topup":
             await send_or_edit(update, "Заявка пополнения не найдена\\.", rows_with_home([], True, ("💳 К пополнениям", "admin:topups")))
             return
+        if ticket.get("status") == "closed":
+            await send_or_edit(update, "Эта заявка на пополнение уже обработана\\.", rows_with_home([[InlineKeyboardButton("💳 К пополнениям", callback_data="admin:topups")]], True))
+            return
         approve = parts[1] == "topup_approve"
         target = data["users"].get(str(ticket["user_id"]))
         if approve and target:
@@ -2919,6 +3096,7 @@ async def admin_router(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             target["balance"] = int(target.get("balance", 0)) + amount
             ticket["status"] = "closed"
             ticket["resolved_at"] = now_iso()
+            ticket["resolved_by_admin_id"] = user["id"]
             audit(data, user["id"], "topup_approved", f"{ticket['ticket_id']} | {amount}")
             save_data(data)
             try:
@@ -3480,6 +3658,83 @@ async def text_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
     if state.get("name") == "rental_request":
         await save_rental_request(update, context, data, user, state["order_id"], scooter_code=text)
         return
+    if state.get("name") == "sell_account_phone":
+        phone = text.strip()
+        context.user_data["state"] = {"name": "sell_account_username", "phone": phone}
+        await update.message.reply_text(
+            "Шаг 2 из 4\\. Введите ваш username для связи \\(например @username\\)\\:",
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=rows_with_home([[InlineKeyboardButton("❌ Отменить", callback_data="menu:sell_account_cancel")]], admin),
+        )
+        return
+    if state.get("name") == "sell_account_username":
+        contact_username = text.strip()
+        context.user_data["state"] = {**state, "name": "sell_account_debt", "contact_username": contact_username}
+        await update.message.reply_text(
+            "Шаг 3 из 4\\. Есть ли задолженность на аккаунте?",
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=rows_with_home(
+                [
+                    [InlineKeyboardButton("✅ Нет задолженности", callback_data="sell_account_debt:no")],
+                    [InlineKeyboardButton("⚠️ Есть задолженность", callback_data="sell_account_debt:yes")],
+                    [InlineKeyboardButton("❌ Отменить", callback_data="menu:sell_account_cancel")],
+                ],
+                admin,
+            ),
+        )
+        return
+    if state.get("name") == "sell_account_requisites":
+        requisites = text.strip()
+        phone = state.get("phone", "")
+        contact_username = state.get("contact_username", "")
+        has_debt = state.get("has_debt", False)
+        sale_id = generate_id("SAL")
+        data.setdefault("account_sales", {})[sale_id] = {
+            "sale_id": sale_id,
+            "user_id": user["id"],
+            "username": user.get("username", ""),
+            "phone": phone,
+            "contact_username": contact_username,
+            "has_debt": has_debt,
+            "requisites": requisites[:500],
+            "status": "new",
+            "created_at": now_iso(),
+            "reviewed_by_admin_id": None,
+        }
+        audit(data, user["id"], "account_sale_created", sale_id)
+        save_data(data)
+        clear_state(context)
+        await update.message.reply_text(
+            f"✅ *Заявка на продажу аккаунта принята*\n\nID: `{escape_markdown(sale_id)}`\n\nМы свяжемся с вами по указанному username в ближайшее время\\.",
+            parse_mode=ParseMode.MARKDOWN_V2,
+            reply_markup=rows_with_home([], admin),
+        )
+        debt_text = "⚠️ Есть задолженность" if has_debt else "✅ Нет задолженности"
+        notify_text = (
+            f"*💰 Новая заявка на продажу аккаунта*\n\n"
+            f"ID: `{escape_markdown(sale_id)}`\n"
+            f"Пользователь: `{escape_markdown(user['id'])}` @{escape_markdown(user.get('username') or '-')}\n"
+            f"Телефон: `{escape_markdown(phone)}`\n"
+            f"Контакт: {escape_markdown(contact_username)}\n"
+            f"Задолженность: *{escape_markdown(debt_text)}*\n"
+            f"Реквизиты: {escape_markdown(requisites)}"
+        )
+        sale_keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("✅ Одобрить", callback_data=f"admin:sale_approve:{sale_id}"),
+                InlineKeyboardButton("❌ Отклонить", callback_data=f"admin:sale_reject:{sale_id}"),
+            ],
+            [InlineKeyboardButton("💰 Открыть заявку", callback_data=f"admin:sale:{sale_id}")],
+        ])
+        for admin_id in data.get("admins", []):
+            admin_user = data["users"].get(str(admin_id))
+            if admin_user and not admin_user.get("admin_on_duty", True):
+                continue
+            try:
+                await context.bot.send_message(chat_id=int(admin_id), text=notify_text, reply_markup=sale_keyboard, parse_mode=ParseMode.MARKDOWN_V2)
+            except Exception as exc:
+                logger.warning("Failed to notify admin %s about account sale: %s", admin_id, exc)
+        return
     if state.get("name") == "review":
         order_id = state["order_id"]
         order = data["orders"].get(order_id)
@@ -3708,6 +3963,7 @@ def main() -> None:
     app.add_handler(CommandHandler("support", support_command))
     app.add_handler(CallbackQueryHandler(menu_router, pattern=r"^menu:"))
     app.add_handler(CallbackQueryHandler(topup_router, pattern=r"^topup:"))
+    app.add_handler(CallbackQueryHandler(sell_account_debt_router, pattern=r"^sell_account_debt:"))
     app.add_handler(CallbackQueryHandler(category_router, pattern=r"^cat:"))
     app.add_handler(CallbackQueryHandler(product_router, pattern=r"^product:"))
     app.add_handler(CallbackQueryHandler(cart_router, pattern=r"^cart:"))
